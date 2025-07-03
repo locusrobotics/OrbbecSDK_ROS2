@@ -31,7 +31,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find orbbec_description)/meshes/orbbec_335L_base_link.stl" />
+          filename="file://$(find orbbec_description)/meshes/gemini335L_336L/base_link_simplified.stl" />
       </geometry>
       <material
         name="">

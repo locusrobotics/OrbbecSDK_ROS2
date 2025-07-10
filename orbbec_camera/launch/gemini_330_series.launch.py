@@ -42,7 +42,7 @@ def load_parameters(context, args):
     if config_file_path:
         yaml_params = load_yaml(config_file_path)
         default_params = merge_params(default_params, yaml_params)
-    skip_convert = {'config_file_path', 'usb_port', 'serial_number'}
+    skip_convert = {'config_file_path', 'usb_port', 'serial_number', 'namespace', 'camera_name'}
     return {
         key: (value if key in skip_convert else convert_value(value))
         for key, value in default_params.items()
@@ -51,6 +51,7 @@ def load_parameters(context, args):
 
 def generate_launch_description():
     args = [
+        DeclareLaunchArgument('namespace', default_value=''),
         DeclareLaunchArgument('camera_name', default_value='camera'),
         DeclareLaunchArgument('depth_registration', default_value='true'),
         DeclareLaunchArgument('serial_number', default_value=''),
@@ -267,39 +268,45 @@ def generate_launch_description():
 
     def create_node_action(context, args):
         params = get_params(context, args)
+        namespace = LaunchConfiguration("namespace").perform(context)
+        camera_name = LaunchConfiguration("camera_name").perform(context)
         ros_distro = os.environ.get("ROS_DISTRO", "humble")
+
         if ros_distro == "foxy":
             return [
                 Node(
                     package="orbbec_camera",
                     executable="orbbec_camera_node",
                     name="ob_camera_node",
-                    namespace=LaunchConfiguration("camera_name"),
+                    namespace=namespace,
                     parameters=params,
                     output="screen",
                 )
             ]
         else:
-            return [
-                GroupAction([
-                    PushRosNamespace(LaunchConfiguration("camera_name")),
-                    ComposableNodeContainer(
-                        name="camera_container",
-                        namespace="",
-                        package="rclcpp_components",
-                        executable="component_container",
-                        composable_node_descriptions=[
-                            ComposableNode(
-                                package="orbbec_camera",
-                                plugin="orbbec_camera::OBCameraNodeDriver",
-                                name=LaunchConfiguration("camera_name"),
-                                parameters=params,
-                            ),
-                        ],
-                        output="screen",
-                    )
-                ])
-            ]
+            actions = []
+            if namespace:
+                actions.append(PushRosNamespace(namespace))
+
+            actions.append(
+                ComposableNodeContainer(
+                    name="camera_container",
+                    namespace="",
+                    package="rclcpp_components",
+                    executable="component_container",
+                    composable_node_descriptions=[
+                        ComposableNode(
+                            package="orbbec_camera",
+                            plugin="orbbec_camera::OBCameraNodeDriver",
+                            name=camera_name,
+                            parameters=params,
+                        ),
+                    ],
+                    output="screen",
+                )
+            )
+
+            return [GroupAction(actions)]
 
     return LaunchDescription(
         args + [

@@ -62,7 +62,7 @@ def generate_launch_description():
         DeclareLaunchArgument('preset_firmware_path', default_value=''),
         DeclareLaunchArgument('load_config_json_file_path', default_value=''),
         DeclareLaunchArgument('export_config_json_file_path', default_value=''),
-        DeclareLaunchArgument('uvc_backend', default_value='libuvc'),#libuvc or v4l2
+        DeclareLaunchArgument('uvc_backend', default_value='libuvc'),  # libuvc or v4l2
         DeclareLaunchArgument('point_cloud_qos', default_value='default'),
         DeclareLaunchArgument('enable_point_cloud', default_value='true'),
         DeclareLaunchArgument('enable_colored_point_cloud', default_value='false'),
@@ -76,7 +76,7 @@ def generate_launch_description():
         DeclareLaunchArgument('color_qos', default_value='default'),
         DeclareLaunchArgument('color_camera_info_qos', default_value='default'),
         DeclareLaunchArgument('enable_color_auto_exposure_priority', default_value='false'),
-        DeclareLaunchArgument('color_rotation', default_value='-1'),#color rotation degree : 0, 90, 180, 270
+        DeclareLaunchArgument('color_rotation', default_value='-1'),  # color rotation degree : 0, 90, 180, 270
         DeclareLaunchArgument('color_flip', default_value='false'),
         DeclareLaunchArgument('color_mirror', default_value='false'),
         DeclareLaunchArgument('color_ae_roi_left', default_value='-1'),
@@ -97,7 +97,7 @@ def generate_launch_description():
         DeclareLaunchArgument('color_constrast', default_value='-1'),
         DeclareLaunchArgument('color_hue', default_value='-1'),
         DeclareLaunchArgument('enable_color_backlight_compenstation', default_value='false'),
-        DeclareLaunchArgument('color_powerline_freq', default_value=''),#disable ,50hz ,60hz ,auto
+        DeclareLaunchArgument('color_powerline_freq', default_value=''),  # disable ,50hz ,60hz ,auto
         DeclareLaunchArgument('enable_color_decimation_filter', default_value='false'),
         DeclareLaunchArgument('color_decimation_filter_scale', default_value='-1'),
         DeclareLaunchArgument('depth_width', default_value='0'),
@@ -109,7 +109,7 @@ def generate_launch_description():
         DeclareLaunchArgument('depth_camera_info_qos', default_value='default'),
         DeclareLaunchArgument('enable_depth_auto_exposure_priority', default_value='false'),
         DeclareLaunchArgument('depth_precision', default_value=''),
-        DeclareLaunchArgument('depth_rotation', default_value='-1'),#depth rotation degree : 0, 90, 180, 270
+        DeclareLaunchArgument('depth_rotation', default_value='-1'),  # depth rotation degree : 0, 90, 180, 270
         DeclareLaunchArgument('depth_flip', default_value='false'),
         DeclareLaunchArgument('depth_mirror', default_value='false'),
         DeclareLaunchArgument('depth_ae_roi_left', default_value='-1'),
@@ -124,7 +124,7 @@ def generate_launch_description():
         DeclareLaunchArgument('enable_left_ir', default_value='false'),
         DeclareLaunchArgument('left_ir_qos', default_value='default'),
         DeclareLaunchArgument('left_ir_camera_info_qos', default_value='default'),
-        DeclareLaunchArgument('left_ir_rotation', default_value='-1'),#left_ir rotation degree : 0, 90, 180, 270
+        DeclareLaunchArgument('left_ir_rotation', default_value='-1'),  # left_ir rotation degree : 0, 90, 180, 270
         DeclareLaunchArgument('left_ir_flip', default_value='false'),
         DeclareLaunchArgument('left_ir_mirror', default_value='false'),
         DeclareLaunchArgument('enable_left_ir_sequence_id_filter', default_value='false'),
@@ -136,7 +136,7 @@ def generate_launch_description():
         DeclareLaunchArgument('enable_right_ir', default_value='false'),
         DeclareLaunchArgument('right_ir_qos', default_value='default'),
         DeclareLaunchArgument('right_ir_camera_info_qos', default_value='default'),
-        DeclareLaunchArgument('right_ir_rotation', default_value='-1'),#right_ir rotation degree : 0, 90, 180, 270
+        DeclareLaunchArgument('right_ir_rotation', default_value='-1'),  # right_ir rotation degree : 0, 90, 180, 270
         DeclareLaunchArgument('right_ir_flip', default_value='false'),
         DeclareLaunchArgument('right_ir_mirror', default_value='false'),
         DeclareLaunchArgument('enable_right_ir_sequence_id_filter', default_value='false'),
@@ -167,7 +167,7 @@ def generate_launch_description():
         DeclareLaunchArgument('enumerate_net_device', default_value='true'),
         DeclareLaunchArgument('net_device_ip', default_value=''),
         DeclareLaunchArgument('net_device_port', default_value='0'),
-        DeclareLaunchArgument('exposure_range_mode', default_value='default'),#default, ultimate or regular
+        DeclareLaunchArgument('exposure_range_mode', default_value='default'),  # default, ultimate or regular
         DeclareLaunchArgument('log_level', default_value='none'),
         DeclareLaunchArgument('enable_publish_extrinsic', default_value='false'),
         DeclareLaunchArgument('enable_d2c_viewer', default_value='false'),
@@ -183,7 +183,7 @@ def generate_launch_description():
         DeclareLaunchArgument('software_trigger_enabled', default_value='true'),
         DeclareLaunchArgument('frames_per_trigger', default_value='2'),
         DeclareLaunchArgument('software_trigger_period', default_value='33'),  # ms
-        DeclareLaunchArgument('enable_ptp_config', default_value='false'),#Only for Gemini 335Le
+        DeclareLaunchArgument('enable_ptp_config', default_value='false'),  # Only for Gemini 335Le
         DeclareLaunchArgument('enable_frame_sync', default_value='true'),
         DeclareLaunchArgument('ordered_pc', default_value='false'),
         DeclareLaunchArgument('enable_depth_scale', default_value='true'),
@@ -216,7 +216,7 @@ def generate_launch_description():
         DeclareLaunchArgument('hdr_merge_exposure_2', default_value='-1'),
         DeclareLaunchArgument('hdr_merge_gain_2', default_value='-1'),
         DeclareLaunchArgument('align_mode', default_value='SW'),
-        DeclareLaunchArgument('align_target_stream', default_value='COLOR'),# COLOR or DEPTH
+        DeclareLaunchArgument('align_target_stream', default_value='COLOR'),  # COLOR or DEPTH
         DeclareLaunchArgument('diagnostic_period', default_value='1.0'),
         DeclareLaunchArgument('enable_laser', default_value='true'),
         DeclareLaunchArgument('depth_precision', default_value=''),
@@ -224,7 +224,7 @@ def generate_launch_description():
         DeclareLaunchArgument('retry_on_usb3_detection_failure', default_value='false'),
         DeclareLaunchArgument('laser_energy_level', default_value='-1'),
         DeclareLaunchArgument('enable_sync_host_time', default_value='true'),
-        DeclareLaunchArgument('time_domain', default_value='global'),# global, device, system
+        DeclareLaunchArgument('time_domain', default_value='global'),  # global, device, system
         DeclareLaunchArgument('enable_color_undistortion', default_value='false'),
         DeclareLaunchArgument('config_file_path', default_value=''),
         DeclareLaunchArgument('enable_heartbeat', default_value='false'),
@@ -235,13 +235,13 @@ def generate_launch_description():
         DeclareLaunchArgument('disparity_offset_config', default_value='false'),
         DeclareLaunchArgument('offset_index0', default_value='-1'),
         DeclareLaunchArgument('offset_index1', default_value='-1'),
-        DeclareLaunchArgument('frame_aggregate_mode', default_value='ANY'), # full_frame, color_frame, ANY or disable
-        DeclareLaunchArgument('interleave_ae_mode', default_value='laser'), # 'hdr' or 'laser'
+        DeclareLaunchArgument('frame_aggregate_mode', default_value='ANY'),  # full_frame, color_frame, ANY or disable
+        DeclareLaunchArgument('interleave_ae_mode', default_value='laser'),  # 'hdr' or 'laser'
         DeclareLaunchArgument('interleave_frame_enable', default_value='false'),
         DeclareLaunchArgument('interleave_skip_enable', default_value='false'),
-        DeclareLaunchArgument('interleave_skip_index', default_value='1'), # 0:skip pattern ir  1: skip flood ir
+        DeclareLaunchArgument('interleave_skip_index', default_value='1'),  # 0:skip pattern ir  1: skip flood ir
 
-        DeclareLaunchArgument('hdr_index1_laser_control', default_value='1'),#interleave_hdr_param
+        DeclareLaunchArgument('hdr_index1_laser_control', default_value='1'),  # interleave_hdr_param
         DeclareLaunchArgument('hdr_index1_depth_exposure', default_value='1'),
         DeclareLaunchArgument('hdr_index1_depth_gain', default_value='16'),
         DeclareLaunchArgument('hdr_index1_ir_brightness', default_value='20'),
@@ -252,7 +252,7 @@ def generate_launch_description():
         DeclareLaunchArgument('hdr_index0_ir_brightness', default_value='60'),
         DeclareLaunchArgument('hdr_index0_ir_ae_max_exposure', default_value='10000'),
 
-        DeclareLaunchArgument('laser_index1_laser_control', default_value='0'),#interleave_laser_param
+        DeclareLaunchArgument('laser_index1_laser_control', default_value='0'),  # interleave_laser_param
         DeclareLaunchArgument('laser_index1_depth_exposure', default_value='3000'),
         DeclareLaunchArgument('laser_index1_depth_gain', default_value='16'),
         DeclareLaunchArgument('laser_index1_ir_brightness', default_value='60'),

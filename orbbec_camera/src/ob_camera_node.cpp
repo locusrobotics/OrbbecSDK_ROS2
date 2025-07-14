@@ -1964,7 +1964,7 @@ void OBCameraNode::setupPublishers() {
     if (!enable_stream_[stream_index]) {
       continue;
     }
-    std::string topic_prefix = node_->get_fully_qualified_name() + "/";
+    std::string topic_prefix = std::string(node_->get_fully_qualified_name()) + "/";
     std::string name = stream_name_[stream_index];
     std::string topic = topic_prefix + name + "/image_raw";
     auto image_qos = image_qos_[stream_index];

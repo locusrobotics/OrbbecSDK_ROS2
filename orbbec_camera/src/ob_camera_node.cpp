@@ -1960,11 +1960,11 @@ void OBCameraNode::setupPublishers() {
   auto device_info = device_->getDeviceInfo();
   CHECK_NOTNULL(device_info.get());
   auto pid = device_info->getPid();
+  std::string topic_prefix = std::string(node_->get_fully_qualified_name()) + "/";
   for (const auto &stream_index : IMAGE_STREAMS) {
     if (!enable_stream_[stream_index]) {
       continue;
     }
-    std::string topic_prefix = std::string(node_->get_fully_qualified_name()) + "/";
     std::string name = stream_name_[stream_index];
     std::string topic = topic_prefix + name + "/image_raw";
     auto image_qos = image_qos_[stream_index];

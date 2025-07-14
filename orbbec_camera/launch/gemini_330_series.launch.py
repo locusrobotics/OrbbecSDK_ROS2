@@ -52,6 +52,7 @@ def load_parameters(context, args):
 def generate_launch_description():
     args = [
         DeclareLaunchArgument('namespace', default_value=''),
+        DeclareLaunchArgument('output', default_value='screen'),
         DeclareLaunchArgument('camera_name', default_value='camera'),
         DeclareLaunchArgument('depth_registration', default_value='true'),
         DeclareLaunchArgument('serial_number', default_value=''),
@@ -269,6 +270,7 @@ def generate_launch_description():
     def create_node_action(context, args):
         params = get_params(context, args)
         namespace = LaunchConfiguration("namespace").perform(context)
+        output = LaunchConfiguration("output").perform(context)
         camera_name = LaunchConfiguration("camera_name").perform(context)
         ros_distro = os.environ.get("ROS_DISTRO", "humble")
 
@@ -280,7 +282,7 @@ def generate_launch_description():
                     name="ob_camera_node",
                     namespace=namespace,
                     parameters=params,
-                    output="screen",
+                    output=output,
                 )
             ]
         else:
@@ -302,7 +304,7 @@ def generate_launch_description():
                             parameters=params,
                         ),
                     ],
-                    output="screen",
+                    output=output,
                 )
             )
 

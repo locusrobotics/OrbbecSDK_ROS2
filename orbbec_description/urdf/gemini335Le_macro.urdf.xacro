@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 <!-- based off of orbbec_description/urdf/gemini335Le.urdf.xacro -->
 
-<xacro:macro name="gemini_335L_336L" params="
+<xacro:macro name="gemini_335Le" params="
     parent
     prefix:='camera'
     *origin
@@ -46,7 +46,7 @@
         <color rgba="0.8 0.8 0.8 1" />
       </material>
     </visual>
-    <!-- TODO - set collision size -->
+    <!-- TODO: set collision size -->
     <collision>
       <origin xyz="0 0 0.015" rpy="0 0 0" />
       <geometry>
@@ -85,6 +85,22 @@
       xyz="0 0 0" />
   </joint>
 
+  <link name="${prefix}_infra2_optical_frame" />
+  <joint
+    name="${prefix}_infra2_optical_frame_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0 -1.5708" />
+    <parent
+      link="${prefix}_infra2_frame" />
+    <child
+      link="${prefix}_infra2_optical_frame" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+
   <link name="${prefix}_infra1_frame" />
   <joint
     name="${prefix}_infra1_frame_joint"
@@ -96,6 +112,21 @@
       link="${prefix}_link" />
     <child
       link="${prefix}_infra1_frame" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+  <link name="${prefix}_infra1_optical_frame" />
+  <joint
+    name="${prefix}_infra1_optical_frame_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0 -1.5708" />
+    <parent
+      link="${prefix}_infra1_frame" />
+    <child
+      link="${prefix}_infra1_optical_frame" />
     <axis
       xyz="0 0 0" />
   </joint>
@@ -115,6 +146,21 @@
       xyz="0 0 0" />
   </joint>
 
+  <link name="${prefix}_color_optical_frame" />
+  <joint
+    name="${prefix}_color_optical_frame_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0 -1.5708" />
+    <parent
+      link="${prefix}_color_frame" />
+    <child
+      link="${prefix}_color_optical_frame" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
   <link name="${prefix}_imu_frame" />
   <joint
     name="${prefix}_imu_frame_joint"
@@ -130,6 +176,7 @@
       xyz="0 0 0" />
   </joint>
 
+  <!-- TODO: check image properties for 335Le and 335L -->
   <xacro:if value="${sim_gazebo}">
     <!-- Use the realsense2_gz_description which can simulate a generic depth camera -->
     <xacro:include filename="$(find realsense2_gz_description)/urdf/rgbd_camera.gazebo.xacro" />

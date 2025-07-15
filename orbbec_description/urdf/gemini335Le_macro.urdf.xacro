@@ -175,7 +175,6 @@
       xyz="0 0 0" />
   </joint>
 
-  <!-- TODO: check image properties for 335Le and 335L -->
   <xacro:if value="${sim_gazebo}">
     <!-- Use the realsense2_gz_description which can simulate a generic depth camera -->
     <xacro:include filename="$(find realsense2_gz_description)/urdf/rgbd_camera.gazebo.xacro" />
@@ -188,7 +187,7 @@
       image_height="${gz_image_height}"
       h_fov="${94 * pi/180}"
       v_fov="${68 * pi/180}"
-      min_depth="0.5"
+      min_depth="0.25"
       max_depth="6.0" />
   </xacro:if>
 

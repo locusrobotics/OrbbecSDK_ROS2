@@ -196,7 +196,7 @@
       image_height="${gz_image_height}"
       h_fov="${94 * pi/180}"
       v_fov="${68 * pi/180}"
-      min_depth="0.5"
+      min_depth="0.17"
       max_depth="6.0" />
   </xacro:if>
 

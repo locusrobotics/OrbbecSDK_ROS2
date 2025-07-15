@@ -25,7 +25,7 @@
         xyz="0.01235 -0.0020872 0.013243"
         rpy="0 0 0" />
       <mass
-        value="0.0.043446" />
+        value="0.043446" />
       <inertia
         ixx="6.3353E-05"
         ixy="-1.7904E-06"
@@ -46,11 +46,10 @@
         <color rgba="0.8 0.8 0.8 1" />
       </material>
     </visual>
-    <!-- TODO: set collision size -->
     <collision>
-      <origin xyz="0 0 0.015" rpy="0 0 0" />
+      <origin xyz="0.013 0 0.015" rpy="0 0 0" />
       <geometry>
-        <box size="0.03 0.13 0.03"/>
+        <box size="0.055 0.125 0.03"/>
       </geometry>
     </collision>
   </link>

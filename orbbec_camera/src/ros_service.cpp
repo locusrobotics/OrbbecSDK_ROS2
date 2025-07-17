@@ -1066,12 +1066,30 @@ void OBCameraNode::setSYNCHostimeCallback(
 void OBCameraNode::sendSoftwareTriggerCallback(
     const std::shared_ptr<CameraTrigger::Request>& request,
     std::shared_ptr<CameraTrigger::Response>& response) {
-  if (!software_trigger_enabled_) {    
+  if (!software_trigger_enabled_) {
+    service_capture_started_ = true; 
     try {
       if (request->data) {
+        RCLCPP_INFO_STREAM(logger_, "------------ Triggering");
         device_->triggerCapture();
       }
-      response->success = true;
+
+      RCLCPP_INFO_STREAM(logger_, "------------ Capturing images");
+      sleep(service_capture_time_out_ / 1000.0f);
+
+      //capture_mutex_.lock();
+      RCLCPP_INFO_STREAM(logger_, "------------ Captured " << number_of_rgb_frames_captured_ << " " << number_of_depth_frames_captured_);
+      //capture_mutex_.unlock();
+
+      if (number_of_rgb_frames_captured_ == frames_per_trigger_ && number_of_depth_frames_captured_ == frames_per_trigger_) {
+        response->success = true;
+	response->image = *(color_image_);
+	response->depth_image = *(depth_image_);
+      }
+      else {
+        response->success = false;
+        response->message = "Failed to capture images";
+      }
     } catch (const ob::Error& e) {
       response->message = e.getMessage();
       response->success = false;
@@ -1082,10 +1100,9 @@ void OBCameraNode::sendSoftwareTriggerCallback(
       response->message = "unknown error";
       response->success = false;
     }
-
-    RCLCPP_INFO_STREAM(logger_, "------------ Capturing images");
-    sleep(10);
-    RCLCPP_INFO_STREAM(logger_, "------------ Captured " << color_images_.size());
+    service_capture_started_ = false;
+    number_of_rgb_frames_captured_ = 0;
+    number_of_depth_frames_captured_ = 0;
   }
   else {
     RCLCPP_INFO_STREAM(logger_, "Service not enabled");

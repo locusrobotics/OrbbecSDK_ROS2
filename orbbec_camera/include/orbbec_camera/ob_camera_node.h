@@ -26,7 +26,6 @@
 #include <utility>
 #include <vector>
 #include <atomic>
-#include <queue>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
@@ -503,9 +502,16 @@ class OBCameraNode {
   rclcpp::Service<CameraTrigger>::SharedPtr capture_camera_images_srv_;
 
 
-  std::queue<sensor_msgs::msg::Image::UniquePtr> color_images_;
-  std::queue<sensor_msgs::msg::Image::UniquePtr> depth_images_;
-  std::queue<sensor_msgs::msg::Image::UniquePtr> undistorted_color_images_;
+  std::atomic_bool service_capture_started_{false};
+  std::atomic_int number_of_rgb_frames_captured_{0};
+  std::atomic_int number_of_depth_frames_captured_{0};
+  std::mutex capture_mutex_;
+  sensor_msgs::msg::Image::UniquePtr color_image_;
+  sensor_msgs::msg::Image::UniquePtr depth_image_;
+  sensor_msgs::msg::Image::UniquePtr undistorted_color_images_;
+
+  // timeout in ms
+  float service_capture_time_out_ = 1000;
 
   bool enable_sync_output_accel_gyro_ = false;
   bool publish_tf_ = false;

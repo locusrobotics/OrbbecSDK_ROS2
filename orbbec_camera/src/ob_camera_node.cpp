@@ -2659,7 +2659,7 @@ bool OBCameraNode::decodeColorFrameToBuffer(const std::shared_ptr<ob::Frame> &fr
   if (enable_colored_point_cloud_ && depth_registration_cloud_pub_->get_subscription_count() > 0) {
     has_subscriber = true;
   }
-  if (!has_subscriber) {
+  if (!has_subscriber && !service_capture_started_) {
     return false;
   }
   if (metadata_publishers_.count(COLOR) &&
@@ -2742,6 +2742,7 @@ std::shared_ptr<ob::Frame> OBCameraNode::decodeIRMJPGFrame(
 
 void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
                                       const stream_index_pair &stream_index) {
+  capture_mutex_.lock();
   if (frame == nullptr) {
     return;
   }
@@ -2752,7 +2753,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   has_subscriber =
       has_subscriber || (metadata_publishers_.count(stream_index) &&
                          metadata_publishers_[stream_index]->get_subscription_count() > 0);
-  if (!has_subscriber) {
+  if (!has_subscriber && !service_capture_started_) {
     return;
   }
   std::shared_ptr<ob::VideoFrame> video_frame;
@@ -2834,9 +2835,6 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     publishMetadata(frame, stream_index, camera_info.header);
   }
   CHECK_NOTNULL(image_publishers_[stream_index]);
-  if (image_publishers_[stream_index]->get_subscription_count() == 0) {
-    return;
-  }
   auto &image = images_[stream_index];
   if (image.empty() || image.cols != width || image.rows != height) {
     image.create(height, width, image_format_[stream_index]);
@@ -2868,20 +2866,23 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   image_msg->header.frame_id = frame_id;
   CHECK(image_publishers_.count(stream_index) > 0);
 
-  saveImageToFile(stream_index, image, *image_msg);
-  image_publishers_[stream_index]->publish(std::move(image_msg));
-  if (!software_trigger_enabled_) {
-    RCLCPP_INFO_STREAM(logger_, "------------ HERE");
+  if (image_publishers_[stream_index]->get_subscription_count() > 0) {
+    saveImageToFile(stream_index, image, *image_msg);
+    image_publishers_[stream_index]->publish(std::move(image_msg));
+  }
+
+  if (!software_trigger_enabled_ and service_capture_started_) {
     if (stream_index == COLOR) {
-      color_images_.push(std::move(image_msg));
+      number_of_rgb_frames_captured_++;
+      color_image_ = std::move(image_msg);
     }
     else if (stream_index == DEPTH) {
-      depth_images_.push(std::move(image_msg));
+      number_of_depth_frames_captured_++;
+      depth_image_ = std::move(image_msg);
     }
   }
 
-  if (stream_index == COLOR && enable_color_undistortion_ &&
-      color_undistortion_publisher_->get_subscription_count() > 0) {
+  if (stream_index == COLOR && enable_color_undistortion_) {
     auto undistorted_image = undistortImage(image, intrinsic, distortion);
     sensor_msgs::msg::Image::UniquePtr undistorted_image_msg(new sensor_msgs::msg::Image());
     cv_bridge::CvImage(std_msgs::msg::Header(), encoding_[stream_index], undistorted_image)
@@ -2891,8 +2892,11 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     undistorted_image_msg->is_bigendian = false;
     undistorted_image_msg->step = width * unit_step_size_[stream_index];
     undistorted_image_msg->header.frame_id = frame_id;
-    color_undistortion_publisher_->publish(std::move(undistorted_image_msg));
+    if (color_undistortion_publisher_->get_subscription_count() > 0) {
+      color_undistortion_publisher_->publish(std::move(undistorted_image_msg));
+    }
   }
+  capture_mutex_.unlock();
 }
 
 void OBCameraNode::publishMetadata(const std::shared_ptr<ob::Frame> &frame,

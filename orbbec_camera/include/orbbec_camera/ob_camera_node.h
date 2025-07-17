@@ -498,7 +498,7 @@ class OBCameraNode {
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_reset_timestamp_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_interleaver_laser_sync_srv_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_sync_host_time_srv_;
-  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr send_software_trigger_srv_;
+  rclcpp::Service<CameraTrigger>::SharedPtr send_software_trigger_srv_;
   rclcpp::Service<SetFilter>::SharedPtr set_filter_srv_;
   rclcpp::Service<CameraTrigger>::SharedPtr capture_camera_images_srv_;
 

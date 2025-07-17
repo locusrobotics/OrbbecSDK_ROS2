@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 #include <atomic>
+#include <queue>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
@@ -48,6 +49,7 @@
 
 #include "orbbec_camera_msgs/msg/device_info.hpp"
 #include "orbbec_camera_msgs/srv/get_device_info.hpp"
+#include "orbbec_camera_msgs/srv/camera_trigger.hpp"
 #include "orbbec_camera_msgs/msg/extrinsics.hpp"
 #include "orbbec_camera_msgs/msg/metadata.hpp"
 #include "orbbec_camera_msgs/msg/imu_info.hpp"
@@ -111,6 +113,7 @@ using SetBool = std_srvs::srv::SetBool;
 using GetBool = orbbec_camera_msgs::srv::GetBool;
 using SetFilter = orbbec_camera_msgs::srv::SetFilter;
 using SetArrays = orbbec_camera_msgs::srv::SetArrays;
+using CameraTrigger = orbbec_camera_msgs::srv::CameraTrigger;
 
 typedef std::pair<ob_stream_type, int> stream_index_pair;
 
@@ -313,8 +316,8 @@ class OBCameraNode {
                          std::shared_ptr<SetFilter ::Response>& response);
   void setSYNCHostimeCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
                               std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
-  void sendSoftwareTriggerCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
-                                   std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
+  void sendSoftwareTriggerCallback(const std::shared_ptr<CameraTrigger::Request>& request,
+                                   std::shared_ptr<CameraTrigger::Response>& response);
 
   bool toggleSensor(const stream_index_pair& stream_index, bool enabled, std::string& msg);
 
@@ -497,6 +500,12 @@ class OBCameraNode {
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_sync_host_time_srv_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr send_software_trigger_srv_;
   rclcpp::Service<SetFilter>::SharedPtr set_filter_srv_;
+  rclcpp::Service<CameraTrigger>::SharedPtr capture_camera_images_srv_;
+
+
+  std::queue<sensor_msgs::msg::Image::UniquePtr> color_images_;
+  std::queue<sensor_msgs::msg::Image::UniquePtr> depth_images_;
+  std::queue<sensor_msgs::msg::Image::UniquePtr> undistorted_color_images_;
 
   bool enable_sync_output_accel_gyro_ = false;
   bool publish_tf_ = false;

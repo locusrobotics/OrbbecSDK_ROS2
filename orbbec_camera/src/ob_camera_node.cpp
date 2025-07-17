@@ -1656,7 +1656,7 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<int>(trigger2image_delay_us_, "trigger2image_delay_us", 0);
   setAndGetNodeParameter<int>(trigger_out_delay_us_, "trigger_out_delay_us", 0);
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
-  setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", true);
+  setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {
@@ -2867,8 +2867,19 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   image_msg->step = width * unit_step_size_[stream_index];
   image_msg->header.frame_id = frame_id;
   CHECK(image_publishers_.count(stream_index) > 0);
+
   saveImageToFile(stream_index, image, *image_msg);
   image_publishers_[stream_index]->publish(std::move(image_msg));
+  if (!software_trigger_enabled_) {
+    RCLCPP_INFO_STREAM(logger_, "------------ HERE");
+    if (stream_index == COLOR) {
+      color_images_.push(std::move(image_msg));
+    }
+    else if (stream_index == DEPTH) {
+      depth_images_.push(std::move(image_msg));
+    }
+  }
+
   if (stream_index == COLOR && enable_color_undistortion_ &&
       color_undistortion_publisher_->get_subscription_count() > 0) {
     auto undistorted_image = undistortImage(image, intrinsic, distortion);

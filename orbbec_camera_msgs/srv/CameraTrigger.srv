@@ -1,0 +1,8 @@
+# Copyright (C) 2024, Locus Robotics. All rights reserved.
+# Unauthorized copying of this file, via any medium, is strictly prohibited
+# Proprietary and confidential
+
+---
+sensor_msgs/Image image
+sensor_msgs/Image depth_image
+sensor_msgs/CameraInfo info

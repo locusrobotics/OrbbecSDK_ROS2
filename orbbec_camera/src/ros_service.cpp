@@ -206,9 +206,9 @@ void OBCameraNode::setupCameraCtrlServices() {
                                   std::shared_ptr<SetBool::Response> response) {
         setSYNCHostimeCallback(request, response);
       });
-  send_software_trigger_srv_ = node_->create_service<SetBool>(
-      "send_software_trigger", [this](const std::shared_ptr<SetBool::Request> request,
-                                      std::shared_ptr<SetBool::Response> response) {
+  send_software_trigger_srv_ = node_->create_service<CameraTrigger>(
+      "send_software_trigger", [this](const std::shared_ptr<CameraTrigger::Request> request,
+                                      std::shared_ptr<CameraTrigger::Response> response) {
         sendSoftwareTriggerCallback(request, response);
       });
   set_write_customerdata_srv_ = node_->create_service<SetString>(
@@ -1064,22 +1064,31 @@ void OBCameraNode::setSYNCHostimeCallback(
 }
 
 void OBCameraNode::sendSoftwareTriggerCallback(
-    const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
-    std::shared_ptr<std_srvs::srv::SetBool::Response>& response) {
-  try {
-    if (request->data) {
-      device_->triggerCapture();
+    const std::shared_ptr<CameraTrigger::Request>& request,
+    std::shared_ptr<CameraTrigger::Response>& response) {
+  if (!software_trigger_enabled_) {    
+    try {
+      if (request->data) {
+        device_->triggerCapture();
+      }
+      response->success = true;
+    } catch (const ob::Error& e) {
+      response->message = e.getMessage();
+      response->success = false;
+    } catch (const std::exception& e) {
+      response->message = e.what();
+      response->success = false;
+    } catch (...) {
+      response->message = "unknown error";
+      response->success = false;
     }
-    response->success = true;
-  } catch (const ob::Error& e) {
-    response->message = e.getMessage();
-    response->success = false;
-  } catch (const std::exception& e) {
-    response->message = e.what();
-    response->success = false;
-  } catch (...) {
-    response->message = "unknown error";
-    response->success = false;
+
+    RCLCPP_INFO_STREAM(logger_, "------------ Capturing images");
+    sleep(10);
+    RCLCPP_INFO_STREAM(logger_, "------------ Captured " << color_images_.size());
+  }
+  else {
+    RCLCPP_INFO_STREAM(logger_, "Service not enabled");
   }
 }
 

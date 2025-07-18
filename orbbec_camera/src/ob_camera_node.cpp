@@ -2742,7 +2742,6 @@ std::shared_ptr<ob::Frame> OBCameraNode::decodeIRMJPGFrame(
 
 void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
                                       const stream_index_pair &stream_index) {
-  capture_mutex_.lock();
   if (frame == nullptr) {
     return;
   }
@@ -2845,7 +2844,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   }
   if (frame->getType() == OB_FRAME_COLOR && frame->format() != OB_FORMAT_Y8 &&
       frame->format() != OB_FORMAT_Y16 && frame->format() != OB_FORMAT_BGRA &&
-      frame->format() != OB_FORMAT_RGBA && image_publishers_[COLOR]->get_subscription_count() > 0) {
+      frame->format() != OB_FORMAT_RGBA && (image_publishers_[COLOR]->get_subscription_count() > 0 || service_capture_started_)) {
     memcpy(image.data, rgb_buffer_, video_frame->getWidth() * video_frame->getHeight() * 3);
   } else {
     memcpy(image.data, video_frame->getData(), video_frame->getDataSize());
@@ -2867,19 +2866,25 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   CHECK(image_publishers_.count(stream_index) > 0);
 
   if (image_publishers_[stream_index]->get_subscription_count() > 0) {
-    saveImageToFile(stream_index, image, *image_msg);
+    // saveImageToFile(stream_index, image, *image_msg);
     image_publishers_[stream_index]->publish(std::move(image_msg));
   }
 
   if (!software_trigger_enabled_ and service_capture_started_) {
+    std::unique_lock<std::mutex> lock(service_capture_lock_);
     if (stream_index == COLOR) {
-      number_of_rgb_frames_captured_++;
-      color_image_ = std::move(image_msg);
+      if (image_msg) {
+        number_of_rgb_frames_captured_++;
+        color_image_ = std::move(image_msg);
+      }
     }
     else if (stream_index == DEPTH) {
-      number_of_depth_frames_captured_++;
-      depth_image_ = std::move(image_msg);
+      if (image_msg) {
+        number_of_depth_frames_captured_++;
+        depth_image_ = std::move(image_msg);
+      }
     }
+    service_capture_cv_.notify_all();
   }
 
   if (stream_index == COLOR && enable_color_undistortion_) {
@@ -2896,7 +2901,6 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
       color_undistortion_publisher_->publish(std::move(undistorted_image_msg));
     }
   }
-  capture_mutex_.unlock();
 }
 
 void OBCameraNode::publishMetadata(const std::shared_ptr<ob::Frame> &frame,

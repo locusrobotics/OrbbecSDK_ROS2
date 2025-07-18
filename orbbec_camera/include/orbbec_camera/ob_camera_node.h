@@ -505,7 +505,8 @@ class OBCameraNode {
   std::atomic_bool service_capture_started_{false};
   std::atomic_int number_of_rgb_frames_captured_{0};
   std::atomic_int number_of_depth_frames_captured_{0};
-  std::mutex capture_mutex_;
+  std::mutex service_capture_lock_;
+  std::condition_variable service_capture_cv_;
   sensor_msgs::msg::Image::UniquePtr color_image_;
   sensor_msgs::msg::Image::UniquePtr depth_image_;
   sensor_msgs::msg::Image::UniquePtr undistorted_color_images_;

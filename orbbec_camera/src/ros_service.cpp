@@ -1075,13 +1075,11 @@ void OBCameraNode::sendSoftwareTriggerCallback(
       }
 
       RCLCPP_INFO_STREAM(logger_, "------------ Capturing images");
-      sleep(service_capture_time_out_ / 1000.0f);
+      std::unique_lock<std::mutex> lock(service_capture_lock_);
+      service_capture_cv_.wait_until(lock, std::chrono::system_clock::now() + std::chrono::seconds(1), [this]() {return (number_of_rgb_frames_captured_ >= frames_per_trigger_ && number_of_depth_frames_captured_ >= frames_per_trigger_);});
+      RCLCPP_INFO_STREAM(logger_, "------------ Captured " << number_of_rgb_frames_captured_ << " " << number_of_depth_frames_captured_ << " " << (color_image_ == nullptr) << " " <<  (depth_image_ == nullptr));
 
-      //capture_mutex_.lock();
-      RCLCPP_INFO_STREAM(logger_, "------------ Captured " << number_of_rgb_frames_captured_ << " " << number_of_depth_frames_captured_);
-      //capture_mutex_.unlock();
-
-      if (number_of_rgb_frames_captured_ == frames_per_trigger_ && number_of_depth_frames_captured_ == frames_per_trigger_) {
+      if (number_of_rgb_frames_captured_ >= frames_per_trigger_ && number_of_depth_frames_captured_ >= frames_per_trigger_ && color_image_ && depth_image_) {
         response->success = true;
 	response->image = *(color_image_);
 	response->depth_image = *(depth_image_);

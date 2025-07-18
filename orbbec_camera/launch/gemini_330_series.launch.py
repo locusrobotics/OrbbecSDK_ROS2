@@ -292,7 +292,7 @@ def generate_launch_description():
 
             actions.append(
                 ComposableNodeContainer(
-                    name="camera_container",
+                    name=camera_name + "_container",
                     namespace="",
                     package="rclcpp_components",
                     executable="component_container",

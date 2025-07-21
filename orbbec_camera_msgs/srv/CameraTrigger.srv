@@ -5,6 +5,7 @@
 ---
 bool success
 string message
-sensor_msgs/Image image
+sensor_msgs/Image rgb_image
 sensor_msgs/Image depth_image
-sensor_msgs/CameraInfo info
+sensor_msgs/CameraInfo rgb_camera_info
+sensor_msgs/CameraInfo depth_camera_info

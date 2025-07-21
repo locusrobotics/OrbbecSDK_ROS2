@@ -39,13 +39,11 @@ class OrbbecTriggerNode(Node):
         self.future = self.client.call_async(self.request)
         rclpy.spin_until_future_complete(self, self.future)
 
-        self.color_image = None
-        self.depth_image = None
-
         if self.future.result() is not None and self.future.result().success:
             response = self.future.result()
 
-            self.img_publisher.publish(self.future.result().image)
+            self.img_publisher.publish(self.future.result().rgb_image)
+            self.get_logger().error("Received Images!")
         else:
             self.get_logger().error("Service call failed!")
 

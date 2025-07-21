@@ -2877,12 +2877,14 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
       if (image_msg) {
         number_of_rgb_frames_captured_++;
         color_image_ = std::move(image_msg);
+	color_image_camera_info_ = camera_info;
       }
     }
     else if (stream_index == DEPTH) {
       if (image_msg) {
         number_of_depth_frames_captured_++;
         depth_image_ = std::move(image_msg);
+	depth_image_camera_info_ = camera_info;
       }
     }
     service_capture_cv_.notify_all();

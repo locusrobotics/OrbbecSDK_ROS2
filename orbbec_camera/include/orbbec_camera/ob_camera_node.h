@@ -315,6 +315,8 @@ class OBCameraNode {
                          std::shared_ptr<SetFilter ::Response>& response);
   void setSYNCHostimeCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
                               std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
+
+  void resetCaptureServiceVariables();
   void sendSoftwareTriggerCallback(const std::shared_ptr<CameraTrigger::Request>& request,
                                    std::shared_ptr<CameraTrigger::Response>& response);
 
@@ -497,7 +499,7 @@ class OBCameraNode {
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_reset_timestamp_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_interleaver_laser_sync_srv_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_sync_host_time_srv_;
-  rclcpp::Service<CameraTrigger>::SharedPtr send_software_trigger_srv_;
+  rclcpp::Service<CameraTrigger>::SharedPtr send_service_trigger_srv_;
   rclcpp::Service<SetFilter>::SharedPtr set_filter_srv_;
   rclcpp::Service<CameraTrigger>::SharedPtr capture_camera_images_srv_;
 
@@ -601,6 +603,7 @@ class OBCameraNode {
   int trigger2image_delay_us_ = 0;
   int trigger_out_delay_us_ = 0;
   bool trigger_out_enabled_ = false;
+  bool service_trigger_enabled_ = false;
   bool software_trigger_enabled_ = false;
   int frames_per_trigger_ = 2;
   bool enable_ptp_config_ = false;

@@ -206,8 +206,8 @@ void OBCameraNode::setupCameraCtrlServices() {
                                   std::shared_ptr<SetBool::Response> response) {
         setSYNCHostimeCallback(request, response);
       });
-  send_software_trigger_srv_ = node_->create_service<CameraTrigger>(
-      "send_software_trigger", [this](const std::shared_ptr<CameraTrigger::Request> request,
+  send_service_trigger_srv_ = node_->create_service<CameraTrigger>(
+      "send_service_trigger", [this](const std::shared_ptr<CameraTrigger::Request> request,
                                       std::shared_ptr<CameraTrigger::Response> response) {
         sendSoftwareTriggerCallback(request, response);
       });
@@ -1063,16 +1063,21 @@ void OBCameraNode::setSYNCHostimeCallback(
   }
 }
 
+void OBCameraNode::resetCaptureServiceVariables() {
+  service_capture_started_ = false;
+  number_of_rgb_frames_captured_ = 0;
+  number_of_depth_frames_captured_ = 0;
+}
+
 void OBCameraNode::sendSoftwareTriggerCallback(
     const std::shared_ptr<CameraTrigger::Request>& request,
     std::shared_ptr<CameraTrigger::Response>& response) {
-  if (!software_trigger_enabled_) {
+  (void)request;
+  if (service_trigger_enabled_ and !software_trigger_enabled_) {
     service_capture_started_ = true; 
     try {
-      if (request->data) {
-        RCLCPP_INFO_STREAM(logger_, "------------ Triggering");
-        device_->triggerCapture();
-      }
+      RCLCPP_INFO_STREAM(logger_, "------------ Triggering");
+      device_->triggerCapture();
 
       RCLCPP_INFO_STREAM(logger_, "------------ Capturing images");
       std::unique_lock<std::mutex> lock(service_capture_lock_);
@@ -1098,9 +1103,7 @@ void OBCameraNode::sendSoftwareTriggerCallback(
       response->message = "unknown error";
       response->success = false;
     }
-    service_capture_started_ = false;
-    number_of_rgb_frames_captured_ = 0;
-    number_of_depth_frames_captured_ = 0;
+    resetCaptureServiceVariables();
   }
   else {
     RCLCPP_INFO_STREAM(logger_, "Service not enabled");

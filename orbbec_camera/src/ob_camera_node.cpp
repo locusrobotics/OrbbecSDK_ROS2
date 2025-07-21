@@ -300,7 +300,7 @@ void OBCameraNode::setupDevices() {
       RCLCPP_INFO_STREAM(logger_,
                          "Software trigger period " << software_trigger_period_.count() << " ms");
       software_trigger_timer_ = node_->create_wall_timer(software_trigger_period_, [this]() {
-        if (software_trigger_enabled_) {
+        if (!service_trigger_enabled_ and software_trigger_enabled_) {
           TRY_EXECUTE_BLOCK(device_->triggerCapture());
         }
       });
@@ -1657,6 +1657,7 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<int>(trigger_out_delay_us_, "trigger_out_delay_us", 0);
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
   setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
+  setAndGetNodeParameter<bool>(service_trigger_enabled_, "service_trigger_enabled", false);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {
@@ -2870,7 +2871,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     image_publishers_[stream_index]->publish(std::move(image_msg));
   }
 
-  if (!software_trigger_enabled_ and service_capture_started_) {
+  if (service_trigger_enabled_ and service_capture_started_) {
     std::unique_lock<std::mutex> lock(service_capture_lock_);
     if (stream_index == COLOR) {
       if (image_msg) {

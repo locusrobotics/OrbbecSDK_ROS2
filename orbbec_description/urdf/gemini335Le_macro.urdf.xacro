@@ -52,7 +52,7 @@
 
   <link name="${name}_bottom_screw_frame" />
   <joint
-    name="${name}_bottom_screw_frame_joint"
+    name="${name}_bottom_screw_joint"
     type="fixed">
     <origin
       xyz="0 0 0"
@@ -67,7 +67,7 @@
 
   <link name="${name}_infra2_frame" />
   <joint
-    name="${name}_infra2_frame_joint"
+    name="${name}_infra2_joint"
     type="fixed">
     <origin
       xyz="0.034005 -0.0475 0.014048"
@@ -82,7 +82,7 @@
 
   <link name="${name}_infra2_optical_frame" />
   <joint
-    name="${name}_infra2_optical_frame_joint"
+    name="${name}_infra2_optical_joint"
     type="fixed">
     <origin
       xyz="0 0 0"
@@ -98,7 +98,7 @@
 
   <link name="${name}_infra1_frame" />
   <joint
-    name="${name}_infra1_frame_joint"
+    name="${name}_infra1_joint"
     type="fixed">
     <origin
       xyz="0.034005 0.0475 0.014048"
@@ -113,7 +113,7 @@
 
   <link name="${name}_infra1_optical_frame" />
   <joint
-    name="${name}_infra1_optical_frame_joint"
+    name="${name}_infra1_optical_joint"
     type="fixed">
     <origin
       xyz="0 0 0"
@@ -128,7 +128,7 @@
 
   <link name="${name}_depth_frame" />
   <joint
-    name="${name}_depth_frame_joint"
+    name="${name}_depth_joint"
     type="fixed">
     <parent
       link="${name}_infra1_frame" />
@@ -140,7 +140,7 @@
 
   <link name="${name}_depth_optical_frame" />
   <joint
-    name="${name}_depth_optical_frame_joint"
+    name="${name}_depth_optical_joint"
     type="fixed">
     <parent
       link="${name}_infra1_optical_frame" />
@@ -150,9 +150,17 @@
       xyz="0 0 0" />
   </joint>
 
-  <link name="${name}_color_frame" />
+  <link name="${name}_color_frame" >
+    <inertial>
+        <mass value="0.01" />
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.001"  ixy="0" ixz="0"
+                 iyx="0" iyy="0.001" iyz="0"
+                 izx="0" izy="0" izz="0.001" />
+      </inertial>
+  </link>
   <joint
-    name="${name}_frame_frame_joint"
+    name="${name}_color_joint"
     type="fixed">
     <origin
       xyz="0.034014 0.02375 0.014048"
@@ -167,7 +175,7 @@
 
   <link name="${name}_color_optical_frame" />
   <joint
-    name="${name}_color_optical_frame_joint"
+    name="${name}_color_optical_joint"
     type="fixed">
     <origin
       xyz="0 0 0"
@@ -182,7 +190,7 @@
 
   <link name="${name}_imu_frame" />
   <joint
-    name="${name}_imu_frame_joint"
+    name="${name}_imu_joint"
     type="fixed">
     <origin
       xyz="0.019757 0.03619 0.013358"

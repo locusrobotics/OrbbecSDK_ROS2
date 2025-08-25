@@ -1075,11 +1075,11 @@ void OBCameraNode::resetCaptureServiceVariables() {
 }
 
 void OBCameraNode::handleChangeStateRequest(
-    const std::shared_ptr<ChangeState::Request>& request,
-    std::shared_ptr<ChangeState::Response>& response) {
+    const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request>& request,
+    std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response>& response) {
     
   RCLCPP_INFO_STREAM(logger_, "Received request to change state '%d' with label '%s'",
-                     request->state, request->label.c_str());
+                     request->transition.id, request->transition.label.c_str());
   
   respone->success = true;
   if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE) {

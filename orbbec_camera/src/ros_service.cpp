@@ -1081,7 +1081,7 @@ void OBCameraNode::handleChangeStateRequest(
   RCLCPP_INFO(logger_, "Received request to change state '%d' with label '%s'",
                      request->transition.id, request->transition.label.c_str());
   
-  respone->success = true;
+  response->success = true;
   if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE) {
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn ON camera streams");
     if (pipeline_ || pipeline_started_){

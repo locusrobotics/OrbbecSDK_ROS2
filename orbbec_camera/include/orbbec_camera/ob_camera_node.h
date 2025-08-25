@@ -316,7 +316,10 @@ class OBCameraNode {
                          std::shared_ptr<SetFilter ::Response>& response);
   void setSYNCHostimeCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
                               std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
-
+    // Lifecycle Service
+  void handleChangeStateRequest(
+      const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
+      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);  
   void resetCaptureServiceVariables();
   void sendSoftwareTriggerCallback(const std::shared_ptr<CameraTrigger::Request>& request,
                                    std::shared_ptr<CameraTrigger::Response>& response);
@@ -411,11 +414,6 @@ class OBCameraNode {
   void setDepthAutoExposureROI();
 
   void setDisparitySearchOffset();
-
-  // Lifecycle Service
-  void handleChangeStateRequest(
-      const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
-      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);  
 
  private:
   rclcpp::Node* node_ = nullptr;

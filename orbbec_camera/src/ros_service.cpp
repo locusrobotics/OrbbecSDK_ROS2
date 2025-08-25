@@ -221,6 +221,11 @@ void OBCameraNode::setupCameraCtrlServices() {
                                        std::shared_ptr<SetString::Response> response) {
         setReadCustomerData(request, response);
       });
+  change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
+      "change_state", [this](const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
+                             std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response) {
+        handleChangeStateRequest(request, response);
+      });
 }
 
 void OBCameraNode::setExposureCallback(const std::shared_ptr<SetInt32::Request>& request,
@@ -1067,6 +1072,75 @@ void OBCameraNode::resetCaptureServiceVariables() {
   service_capture_started_ = false;
   number_of_rgb_frames_captured_ = 0;
   number_of_depth_frames_captured_ = 0;
+}
+
+void OBCameraNode::handleChangeStateRequest(
+    const std::shared_ptr<ChangeState::Request>& request,
+    std::shared_ptr<ChangeState::Response>& response) {
+    
+  RCLCPP_INFO_STREAM(logger_, "Received request to change state '%d' with label '%s'",
+                     request->state, request->label.c_str());
+  
+  respone->success = true;
+  if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE) {
+    RCLCPP_INFO_STREAM(logger_, "Recieved request to turn ON camera streams");
+    if (pipeline_ || pipeline_started_){
+      RCLCPP_WARN_STREAM(logger_, "Camera streams already ON");
+      response->success = false;
+      response->message = "Camera streams already ON";
+      return;
+    }
+    try {
+      setupProfiles();
+      startStreams();
+      response->message = "Camera streams are now ON";
+      RCLCPP_INFO_STREAM(logger_, "Camera streams are now ON");
+    } catch (const ob::Error& e) {
+      response->success = false;
+      response->message = "Failed to start camera streams: " + std::string(e.getMessage());
+      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.getMessage());
+    } catch (const std::exception& e) {
+      response->success = false;
+      response->message = "Failed to start camera streams: " + std::string(e.what());
+      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.what());
+    } catch (...) {
+      response->success = false;
+      response->message = "Failed to start camera streams: Unknown Error";
+      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: Unknown Error");
+    }
+  }
+  else if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE) {
+    RCLCPP_INFO_STREAM(logger_, "Recieved request to turn OFF camera streams");
+    if (!pipeline_ || !pipeline_started_){
+      RCLCPP_WARN_STREAM(logger_, "Camera streams already OFF");
+      response->success = false;
+      response->message = "Camera streams already OFF";
+      return;
+    }
+    try {
+      stopStreams();
+      response->message = "Camera streams are now OFF";
+      RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
+    } catch (const ob::Error& e) {
+      response->success = false;
+      response->message = "Failed to stop camera streams: " + std::string(e.getMessage());
+      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());
+    } catch (const std::exception& e) {
+      response->success = false;
+      response->message = "Failed to stop camera streams: " + std::string(e.what());
+      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.what());
+    } catch (...) {
+      response->success = false;
+      response->message = "Failed to stop camera streams: Unknown Error";
+      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: Unknown Error");
+    }
+  }
+  else {
+    response->success = false;
+    response->message = "Unsupported transition ID: " + std::to_string(request->transition.id);
+    RCLCPP_ERROR_STREAM(logger_, "Unsupported transition ID: " << request->transition.id);
+  }
+
 }
 
 void OBCameraNode::sendSoftwareTriggerCallback(

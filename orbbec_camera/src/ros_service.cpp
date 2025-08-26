@@ -222,10 +222,9 @@ void OBCameraNode::setupCameraCtrlServices() {
         setReadCustomerData(request, response);
       });
   change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
-      "change_state", [this](const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
-                             std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response) {
-        handleChangeStateRequest(request, response);
-      });
+      "change_state", std::bind(&OBCameraNode::handleChangeStateRequest, this,
+                                std::placeholders::_1, std::placeholders::_2),
+      rclcpp::QoS(1), services_callback_group_);
 }
 
 void OBCameraNode::setExposureCallback(const std::shared_ptr<SetInt32::Request>& request,

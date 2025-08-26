@@ -1129,7 +1129,6 @@ void OBCameraNode::handleChangeStateRequest(
     response->success = false;
     RCLCPP_ERROR_STREAM(logger_, "Unsupported transition ID: " << request->transition.id);
   }
-
 }
 
 void OBCameraNode::sendSoftwareTriggerCallback(

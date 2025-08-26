@@ -505,7 +505,8 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
   }
   if (ob_camera_node_) {
     ob_camera_node_->startIMU();
-    ob_camera_node_->startStreams();
+    // Start Streams Function call is removed from here and added to handleChangeStateRequest
+    // to set up lifecycle management
   } else {
     RCLCPP_INFO_STREAM(logger_, "ob_camera_node_ is nullptr");
   }

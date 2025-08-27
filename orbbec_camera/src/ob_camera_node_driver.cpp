@@ -507,7 +507,7 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
   if (ob_camera_node_) {
     ob_camera_node_->startIMU();
     if (enable_streams_by_default_) {
-      ob_camera_node_->enableStreamsByDefault();
+      ob_camera_node_->startStreams()
     }
   } else {
     RCLCPP_INFO_STREAM(logger_, "ob_camera_node_ is nullptr");

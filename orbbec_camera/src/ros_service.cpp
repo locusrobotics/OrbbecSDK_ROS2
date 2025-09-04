@@ -1084,7 +1084,7 @@ void OBCameraNode::handleChangeStateRequest(
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn ON camera streams");
     if (pipeline_started_){
       RCLCPP_WARN_STREAM(logger_, "Camera streams already ON");
-      response->success = false;
+      response->success = true;
       return;
     }
     try {
@@ -1106,7 +1106,7 @@ void OBCameraNode::handleChangeStateRequest(
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn OFF camera streams");
     if (!pipeline_ || !pipeline_started_){
       RCLCPP_WARN_STREAM(logger_, "Camera streams already OFF");
-      response->success = false;
+      response->success = true;
       return;
     }
     try {

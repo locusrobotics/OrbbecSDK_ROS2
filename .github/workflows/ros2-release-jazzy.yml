@@ -20,7 +20,7 @@ jobs:
       jf_token: ${{ secrets.JF_TOKEN }}
   release:
     name: Release
-    needs: [unit-tests, pre-commit]
+    needs: [unit-tests]
     strategy:
       fail-fast: false
       matrix:

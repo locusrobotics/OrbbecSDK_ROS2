@@ -3,6 +3,7 @@ name: ROS2 Publish Release Jazzy
 on:
   workflow_dispatch:
   workflow_call:
+  pull_request: # TODO REMOVE
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'

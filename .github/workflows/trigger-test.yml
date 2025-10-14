@@ -34,6 +34,7 @@ jobs:
                 "is_semver":"${{ steps.semver.outputs.is_semver }}",
                 "origin_repo":"${{ github.repository }}",
                 "sha":"${{ github.sha }}",
-                "actor":"${{ github.actor }}"
+                "actor":"${{ github.actor }}",
+                "ref_type":"${{ github.ref_type }}"
                 }
               }'

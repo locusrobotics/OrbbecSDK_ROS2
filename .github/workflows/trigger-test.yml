@@ -34,6 +34,6 @@ jobs:
                 "param2":"value2"
                 "semver":"${{ steps.semver.outputs.semver }}",
                 "is_semver":"${{ steps.semver.outputs.is_semver }}",
-                "ref_name":"${{ github.ref_name }}",
+                "ref_name":"${{ github.ref_name }}"
                 }
               }'

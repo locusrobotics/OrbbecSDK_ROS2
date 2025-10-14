@@ -30,10 +30,10 @@ jobs:
             -d '{
               "event_type":"trigger-from-public",
               "client_payload":{
-                "param1":"value1",
-                "param2":"value2",
                 "semver":"${{ steps.semver.outputs.semver }}",
                 "is_semver":"${{ steps.semver.outputs.is_semver }}",
-                "ref_name":"${{ github.ref_name }}"
+                "origin_repo":"${{ github.repository }}",
+                "sha":"${{ github.sha }}",
+                "actor":"${{ github.actor }}"
                 }
               }'

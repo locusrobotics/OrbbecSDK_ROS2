@@ -125,7 +125,8 @@ void OBCameraNodeDriver::init() {
   auto log_level = obLogSeverityFromString(log_level_str);
   connection_delay_ = static_cast<int>(declare_parameter<int>("connection_delay", 100));
   enable_sync_host_time_ = declare_parameter<bool>("enable_sync_host_time", true);
-  upgrade_firmware_ = declare_parameter<std::string>("upgrade_firmware", "");
+  firmware_upgrade_filepath_ = declare_parameter<std::string>("firmware_upgrade_filepath", "");
+  expected_firmware_version_ = declare_parameter<std::string>("expected_firmware_version", "");
   g_camera_name = declare_parameter<std::string>("camera_name", g_camera_name);
   g_time_domain = declare_parameter<std::string>("time_domain", g_time_domain);
   preset_firmware_path_ =
@@ -497,12 +498,14 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
   auto time_cost = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::high_resolution_clock::now() - start_time_);
   RCLCPP_INFO_STREAM(logger_, "Start device cost " << time_cost.count() << " ms");
-  if (!upgrade_firmware_.empty()) {
-    device_->updateFirmware(
-        upgrade_firmware_.c_str(),
-        std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
-                  std::placeholders::_2, std::placeholders::_3),
-        false);
+  if (!firmware_upgrade_filepath_.empty()) {
+    if (device_info_->getFirmwareVersion() != expected_firmware_version_) {
+      device_->updateFirmware(
+          firmware_upgrade_filepath_.c_str(),
+          std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          false);
+    }
   }
   if (ob_camera_node_) {
     ob_camera_node_->startIMU();
@@ -750,7 +753,7 @@ void OBCameraNodeDriver::firmwareUpdateCallback(OBFwUpdateState state, const cha
     RCLCPP_INFO(logger_, "Reboot device");
     ob_camera_node_->rebootDevice();
     device_connected_ = false;
-    upgrade_firmware_ = "";
+    firmware_upgrade_filepath_ = "";
   }
 }
 }  // namespace orbbec_camera

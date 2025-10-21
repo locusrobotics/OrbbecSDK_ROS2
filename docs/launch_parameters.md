@@ -14,8 +14,10 @@ The following are the launch parameters available:
   * The USB port of the camera. This is required when multiple cameras are used
 * **device_num**
   * The number of devices. This must be filled in if multiple cameras are required
-* **upgrade_firmware**
+* **firmware_upgrade_filepath**
   * The input parameter is the firmware path
+* **expected_firmware_version**
+  * The expected firmware version
 * **preset_firmware_path**
   * The input parameter is the perset firmware path. If multiple paths are input, each path needs to be separated by `,`and a maximum of 3 firmware paths can be input
 * **uvc_backend**

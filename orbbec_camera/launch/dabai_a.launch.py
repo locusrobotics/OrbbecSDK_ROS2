@@ -56,7 +56,8 @@ def generate_launch_description():
         DeclareLaunchArgument('serial_number', default_value=''),
         DeclareLaunchArgument('usb_port', default_value=''),
         DeclareLaunchArgument('device_num', default_value='1'),
-        DeclareLaunchArgument('upgrade_firmware', default_value=''),
+        DeclareLaunchArgument('firmware_upgrade_filepath', default_value=''),
+        DeclareLaunchArgument('expected_firmware_version', default_value=''),
         DeclareLaunchArgument('load_config_json_file_path', default_value=''),
         DeclareLaunchArgument('export_config_json_file_path', default_value=''),
         DeclareLaunchArgument('uvc_backend', default_value='libuvc'),#libuvc or v4l2

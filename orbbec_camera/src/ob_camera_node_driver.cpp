@@ -499,12 +499,17 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
       std::chrono::high_resolution_clock::now() - start_time_);
   RCLCPP_INFO_STREAM(logger_, "Start device cost " << time_cost.count() << " ms");
   if (!firmware_upgrade_filepath_.empty()) {
+    RCLCPP_INFO_STREAM(logger_,
+                      "Firmware does not match the expected version : " <<
+                      expected_firmware_version_ << ". Upgrading device.");
     if (device_info_->getFirmwareVersion() != expected_firmware_version_) {
       device_->updateFirmware(
           firmware_upgrade_filepath_.c_str(),
           std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           false);
+    } else {
+      RCLCPP_INFO_STREAM(logger_, "Firmware matches the expected version: " << expected_firmware_version_);
     }
   }
   if (ob_camera_node_) {

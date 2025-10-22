@@ -498,7 +498,7 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
   auto time_cost = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::high_resolution_clock::now() - start_time_);
   RCLCPP_INFO_STREAM(logger_, "Start device cost " << time_cost.count() << " ms");
-  if (!firmware_upgrade_filepath_.empty()) {
+  if (!firmware_upgrade_filepath_.empty() && !expected_firmware_version_.empty()) {
     if (device_info_->getFirmwareVersion() != expected_firmware_version_) {
       RCLCPP_INFO_STREAM(logger_,
                       "Firmware does not match the expected version : " <<

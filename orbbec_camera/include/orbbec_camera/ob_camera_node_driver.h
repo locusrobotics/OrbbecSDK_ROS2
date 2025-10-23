@@ -117,7 +117,8 @@ class OBCameraNodeDriver : public rclcpp::Node {
   std::chrono::time_point<std::chrono::system_clock> start_time_;
   std::string extension_path_;
   static backward::SignalHandling sh;  // for stack trace
-  std::string upgrade_firmware_;
+  std::string firmware_upgrade_filepath_;
+  std::string expected_firmware_version_;
   bool enable_streams_on_startup_ {true};
 };
 }  // namespace orbbec_camera

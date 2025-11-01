@@ -1,6 +1,8 @@
 name: Trigger Private Repo
 on:
-  pull_request:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   trigger:

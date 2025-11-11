@@ -1546,7 +1546,7 @@ void OBCameraNode::getParameters() {
     param_name = stream_name_[stream_index] + "_rotation";
     setAndGetNodeParameter<int>(rotation_stream_[stream_index], param_name, -1);
     param_name = stream_name_[stream_index] + "_frame_id";
-    std::string default_frame_id = camera_name_ + "_" + stream_name_[stream_index] + "_frame";
+    std::string default_frame_id = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame";
     setAndGetNodeParameter(frame_id_[stream_index], param_name, default_frame_id);
     std::string default_optical_frame_id =
         namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";

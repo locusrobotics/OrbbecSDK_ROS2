@@ -1582,7 +1582,7 @@ void OBCameraNode::getParameters() {
     setAndGetNodeParameter<std::string>(imu_rate_[stream_index], param_name, "");
     param_name = stream_name_[stream_index] + "_range";
     setAndGetNodeParameter<std::string>(imu_range_[stream_index], param_name, "");
-    param_name = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
+    param_name = stream_name_[stream_index] + "_frame_id";
     std::string default_frame_id = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame";
     setAndGetNodeParameter(frame_id_[stream_index], param_name, default_frame_id);
     std::string default_optical_frame_id =

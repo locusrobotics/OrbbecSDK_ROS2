@@ -1,10 +1,11 @@
 <launch>
 
-  <arg name="use_tote_pose" default="true" />
+  <arg name="namespace" default="" />
+  <arg name="camera_name" default="inward_a_right_camera" />
 
   <node pkg="orbbec_camera_py" exec="run_orbbec_trigger" output="both">
-    <param name="camera_name" value="/inward_a_right_camera"/>
-    <param name="trigger_period" value="5.0"/>
+    <param name="camera_name" value="$(var namespace)/$(var camera_name)"/>
+    <param name="trigger_period" value="1.0"/>
   </node>
 
 </launch>

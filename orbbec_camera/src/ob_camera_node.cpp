@@ -1520,7 +1520,12 @@ void OBCameraNode::setupDefaultImageFormat() {
 
 void OBCameraNode::getParameters() {
   setAndGetNodeParameter<std::string>(camera_name_, "camera_name", "camera");
-  camera_link_frame_id_ = camera_name_ + "_link";
+  setAndGetNodeParameter<std::string>(namespace_, "namespace", "");
+  if (namespace_ != "") {
+    namespace_ += "/";
+  }
+
+  camera_link_frame_id_ = namespace_ + camera_name_ + "_link";
   for (auto stream_index : IMAGE_STREAMS) {
     std::string param_name = stream_name_[stream_index] + "_width";
     setAndGetNodeParameter(width_[stream_index], param_name, 0);
@@ -1540,11 +1545,11 @@ void OBCameraNode::getParameters() {
     setAndGetNodeParameter<bool>(mirror_stream_[stream_index], param_name, false);
     param_name = stream_name_[stream_index] + "_rotation";
     setAndGetNodeParameter<int>(rotation_stream_[stream_index], param_name, -1);
-    param_name = camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
+    param_name = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
     std::string default_frame_id = camera_name_ + "_" + stream_name_[stream_index] + "_frame";
     setAndGetNodeParameter(frame_id_[stream_index], param_name, default_frame_id);
     std::string default_optical_frame_id =
-        camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
+        namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
     param_name = stream_name_[stream_index] + "_optical_frame_id";
     setAndGetNodeParameter(optical_frame_id_[stream_index], param_name, default_optical_frame_id);
     param_name = stream_name_[stream_index] + "_format";
@@ -1561,7 +1566,7 @@ void OBCameraNode::getParameters() {
     depth_aligned_frame_id_[stream_index] = optical_frame_id_[COLOR];
   }
 
-  accel_gyro_frame_id_ = camera_name_ + "_accel_gyro_optical_frame";
+  accel_gyro_frame_id_ = namespace_ + camera_name_ + "_accel_gyro_optical_frame";
 
   setAndGetNodeParameter<bool>(enable_sync_output_accel_gyro_, "enable_sync_output_accel_gyro",
                                false);
@@ -1577,15 +1582,15 @@ void OBCameraNode::getParameters() {
     setAndGetNodeParameter<std::string>(imu_rate_[stream_index], param_name, "");
     param_name = stream_name_[stream_index] + "_range";
     setAndGetNodeParameter<std::string>(imu_range_[stream_index], param_name, "");
-    param_name = camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
-    std::string default_frame_id = camera_name_ + "_" + stream_name_[stream_index] + "_frame";
+    param_name = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
+    std::string default_frame_id = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame";
     setAndGetNodeParameter(frame_id_[stream_index], param_name, default_frame_id);
     std::string default_optical_frame_id =
-        camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
+        namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
     param_name = stream_name_[stream_index] + "_optical_frame_id";
     setAndGetNodeParameter(optical_frame_id_[stream_index], param_name, default_optical_frame_id);
     depth_aligned_frame_id_[stream_index] =
-        camera_name_ + "_" + stream_name_[COLOR] + "_optical_frame";
+        namespace_ + camera_name_ + "_" + stream_name_[COLOR] + "_optical_frame";
   }
   setAndGetNodeParameter<bool>(publish_tf_, "publish_tf", true);
   setAndGetNodeParameter<double>(tf_publish_rate_, "tf_publish_rate", 0.0);

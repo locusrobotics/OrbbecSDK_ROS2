@@ -992,7 +992,7 @@ void OBCameraNode::setupDepthPostProcessFilter() {
     }
   }
   set_filter_srv_ = node_->create_service<SetFilter>(
-      "set_filter", [this](const std::shared_ptr<SetFilter ::Request> request,
+      camera_name_ + "/set_filter", [this](const std::shared_ptr<SetFilter ::Request> request,
                            std::shared_ptr<SetFilter ::Response> response) {
         setFilterCallback(request, response);
       });

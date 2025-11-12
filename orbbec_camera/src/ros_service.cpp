@@ -230,7 +230,7 @@ void OBCameraNode::setupCameraCtrlServices() {
         writeCustomerDataCallback(request, response);
       });
   read_customerdata_srv_ = node_->create_service<GetString>(
-      camera_name_ + "/" + "set_read_customer_data", [this](const std::shared_ptr<SetString::Request> request,
+      camera_name_ + "/" + "set_read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
                                    std::shared_ptr<GetString::Response> response) {
         readCustomerDataCallback(request, response);
       });

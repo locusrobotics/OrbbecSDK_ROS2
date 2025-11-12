@@ -95,7 +95,9 @@ void OBCameraNode::setAndGetNodeParameter(
 }
 
 OBCameraNode::~OBCameraNode() noexcept {
-   diagnostic_timer_->cancel();
+   if(diagnostic_timer_) {
+	   diagnostic_timer_->cancel();
+   }
    clean();
  }
 

@@ -94,7 +94,10 @@ void OBCameraNode::setAndGetNodeParameter(
   }
 }
 
-OBCameraNode::~OBCameraNode() noexcept { clean(); }
+OBCameraNode::~OBCameraNode() noexcept {
+   diagnostic_timer_->cancel();
+   clean();
+ }
 
 void OBCameraNode::rebootDevice() {
   RCLCPP_WARN_STREAM(logger_, "Reboot device");

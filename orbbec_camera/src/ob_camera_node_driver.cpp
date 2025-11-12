@@ -150,7 +150,7 @@ void OBCameraNodeDriver::init() {
     return;
   }
   reboot_device_srv_ = this->create_service<std_srvs::srv::Empty>(
-      "reboot_device", std::bind(&OBCameraNodeDriver::rebootDeviceCallback, this,
+      g_camera_name + "/reboot_device", std::bind(&OBCameraNodeDriver::rebootDeviceCallback, this,
                                  std::placeholders::_1, std::placeholders::_2));
   pthread_mutexattr_init(&orb_device_lock_attr_);
   pthread_mutexattr_setpshared(&orb_device_lock_attr_, PTHREAD_PROCESS_SHARED);

@@ -2,6 +2,9 @@
 Changelog for package orbbec_camera_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 999.1.2 (2025-12-01)
 --------------------
 * Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)

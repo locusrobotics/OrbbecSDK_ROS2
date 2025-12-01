@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.1.3 (2025-12-01)
+--------------------
 * lifecycle service
 * Contributors: Sushant
 

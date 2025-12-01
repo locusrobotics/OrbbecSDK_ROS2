@@ -234,6 +234,10 @@ void OBCameraNode::setupCameraCtrlServices() {
                                    std::shared_ptr<GetString::Response> response) {
         readCustomerDataCallback(request, response);
       });
+  change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
+      camera_name_ + "/" + "change_state", std::bind(&OBCameraNode::handleChangeStateRequest, this,
+                              std::placeholders::_1, std::placeholders::_2));
+
   set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
       camera_name_ + "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
                                       std::shared_ptr<SetUserCalibParams::Response> response) {

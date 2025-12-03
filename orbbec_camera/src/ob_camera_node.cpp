@@ -94,6 +94,8 @@ OBCameraNode::OBCameraNode(rclcpp::Node *node, std::shared_ptr<ob::Device> devic
 
   fps_delay_status_color_ = std::make_unique<FpsDelayStatus>(logger_);
   fps_delay_status_depth_ = std::make_unique<FpsDelayStatus>(logger_);
+  // Set the Lifecycle state to unconfigured to begin with.
+  set_state(lifecycle_msgs::msg::PRIMARY_STATE_UNCONFIGURED);
 }
 
 template <class T>
@@ -1382,6 +1384,7 @@ int OBCameraNode::init_interleave_laser_param() {
 void OBCameraNode::startStreams() {
   if (pipeline_ != nullptr) {
     pipeline_.reset();
+    set_state(lifecycle_msgs::msg::PRIMARY_STATE_UNKNOWN);
   }
   pipeline_ = std::make_unique<ob::Pipeline>(device_);
 
@@ -1445,6 +1448,7 @@ void OBCameraNode::startStreams() {
     RCLCPP_INFO_STREAM(logger_, "Setting OB_PROP_FRAME_INTERLEAVE_LASER_PATTERN_SYNC_DELAY_INT 0 ");
   }
   pipeline_started_.store(true);
+  set_state(lifecycle_msgs::msg::PRIMARY_STATE_ACTIVE);
 }
 
 void OBCameraNode::startIMUSyncStream() {
@@ -1523,6 +1527,7 @@ void OBCameraNode::stopStreams() {
 
   if (!pipeline_started_ || !pipeline_) {
     RCLCPP_INFO_STREAM(logger_, "pipeline not started or not exist, skip stop pipeline");
+    set_state(lifecycle_msgs::msg::PRIMARY_STATE_UNKNOWN);
     return;
   }
 
@@ -1567,14 +1572,17 @@ void OBCameraNode::stopStreams() {
         }
       }
       pipeline_started_.store(false);
+      set_state(lifecycle_msgs::msg::PRIMARY_STATE_INACTIVE);
     } else {
       RCLCPP_WARN_STREAM(logger_,
                          "Device or pipeline not available during stop - likely disconnected");
     }
   } catch (const ob::Error &e) {
     RCLCPP_ERROR_STREAM(logger_, "Failed to stop pipeline: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::PRIMARY_STATE_UNKNOWN);
   } catch (...) {
     RCLCPP_ERROR_STREAM(logger_, "Failed to stop pipeline");
+    set_state(lifecycle_msgs::msg::PRIMARY_STATE_UNKNOWN);
   }
 }
 
@@ -2366,6 +2374,17 @@ void OBCameraNode::setupPublishers() {
   std_msgs::msg::String msg;
   msg.data = filter_status_.dump(2);
   filter_status_pub_->publish(msg);
+
+  // Similar to a latched topic
+  rclcpp::QoS lifecycle_qos(rclcpp::KeepLast(1));
+  lifecycle_qos.transient_local().reliable(); 
+  lifecycle_state_pub_ =  node_->create_publisher<lifecycle_msgs::msg::State>("state", lifecycle_qos)
+}
+
+void set_state(uint8 state) {
+  lifecycle_msgs::msg::State msg;
+  msg.id = state;
+  lifecycle_state_pub_->publish(msg);
 }
 
 void OBCameraNode::publishPointCloud(const std::shared_ptr<ob::FrameSet> &frame_set) {

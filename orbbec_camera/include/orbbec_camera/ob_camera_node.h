@@ -38,6 +38,7 @@
 #include <std_srvs/srv/empty.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <lifecycle_msgs/srv/change_state.hpp>
+#include <lifecycle_msgs/msg/state.hpp>
 
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
@@ -482,6 +483,8 @@ class OBCameraNode {
 
   bool isWriteCustomerDataSuccess() const;
 
+  void change_state(uint8 state);
+
  private:
   std::atomic_bool write_customer_data_success_{false};
   std::atomic_bool user_calibration_ready_{false};
@@ -860,5 +863,6 @@ class OBCameraNode {
   std::unique_ptr<FpsDelayStatus> fps_delay_status_depth_{nullptr};
 
   std::string intra_camera_sync_reference_;
+  rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
 };
 }  // namespace orbbec_camera

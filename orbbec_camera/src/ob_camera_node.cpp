@@ -2378,7 +2378,8 @@ void OBCameraNode::setupPublishers() {
   // Similar to a latched topic
   rclcpp::QoS lifecycle_qos(rclcpp::KeepLast(1));
   lifecycle_qos.transient_local().reliable(); 
-  lifecycle_state_pub_ =  node_->create_publisher<lifecycle_msgs::msg::State>("state", lifecycle_qos);
+  lifecycle_state_pub_ =
+    node_->create_publisher<lifecycle_msgs::msg::State>(topic_prefix + "state", lifecycle_qos);
 }
 
 void OBCameraNode::set_state(uint8_t state) {

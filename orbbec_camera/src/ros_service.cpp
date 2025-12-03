@@ -1233,7 +1233,6 @@ void OBCameraNode::handleChangeStateRequest(
     try {
       stopStreams();
       RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     } catch (const ob::Error& e) {
       response->success = false;
       RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());

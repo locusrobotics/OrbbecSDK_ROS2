@@ -483,7 +483,7 @@ class OBCameraNode {
 
   bool isWriteCustomerDataSuccess() const;
 
-  void change_state(uint8_t state);
+  void set_state(uint8_t state);
 
  private:
   std::atomic_bool write_customer_data_success_{false};

@@ -2381,7 +2381,7 @@ void OBCameraNode::setupPublishers() {
   lifecycle_state_pub_ =  node_->create_publisher<lifecycle_msgs::msg::State>("state", lifecycle_qos)
 }
 
-void set_state(uint8 state) {
+void OBCameraNode::set_state(uint8 state) {
   lifecycle_msgs::msg::State msg;
   msg.id = state;
   lifecycle_state_pub_->publish(msg);

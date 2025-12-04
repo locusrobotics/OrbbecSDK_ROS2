@@ -1527,7 +1527,6 @@ void OBCameraNode::stopStreams() {
 
   if (!pipeline_started_ || !pipeline_) {
     RCLCPP_INFO_STREAM(logger_, "pipeline not started or not exist, skip stop pipeline");
-    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
     return;
   }
 

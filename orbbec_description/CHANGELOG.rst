@@ -2,6 +2,9 @@
 Changelog for package orbbec_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 999.1.3 (2025-12-01)
 --------------------
 

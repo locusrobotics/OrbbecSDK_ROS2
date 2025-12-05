@@ -2,6 +2,14 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* APG-2108 Adds a status topic to the camera driver (`#18 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/18>`_)
+  This change introduces a /state topic that uses the lifecycle message
+  types to indicate what state the camera is in (streaming or not).
+  Tested on roadkill.
+* Contributors: Sushant Raj
+
 999.1.3 (2025-12-01)
 --------------------
 * lifecycle service

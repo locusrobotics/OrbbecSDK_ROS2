@@ -377,8 +377,13 @@ void OBCameraNode::setupDevices() {
       RCLCPP_INFO_STREAM(logger_,
                          "Software trigger period " << software_trigger_period_.count() << " ms");
       software_trigger_timer_ = node_->create_wall_timer(software_trigger_period_, [this]() {
-        if (!service_trigger_enabled_ and software_trigger_enabled_) {
+        if (software_trigger_enabled_ || (service_trigger_enabled_ and warmup_trigger_frame_count_ <= warmup_trigger_frame_threshold_)) {
           TRY_EXECUTE_BLOCK(device_->triggerCapture());
+
+	  warmup_trigger_frame_count_++;
+          if (service_trigger_enabled_  and warmup_trigger_frame_count_ <= warmup_trigger_frame_threshold_) {
+            RCLCPP_INFO_STREAM(logger_, "Warmup trigger: " << warmup_trigger_frame_count_ << "/" << warmup_trigger_frame_threshold_);
+          }
         }
       });
     }

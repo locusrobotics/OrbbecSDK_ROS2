@@ -412,6 +412,10 @@ class OBCameraNode {
 
   bool deactivateStreams();
 
+  void setupTriggerFailureMonitor();
+
+  void triggerFailureMonitorTimerCallback();
+
   void publishPointCloud(const std::shared_ptr<ob::FrameSet>& frame_set);
 
   void publishDepthPointCloud(const std::shared_ptr<ob::FrameSet>& frame_set);

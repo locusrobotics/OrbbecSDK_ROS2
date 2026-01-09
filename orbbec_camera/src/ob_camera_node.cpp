@@ -2163,7 +2163,7 @@ bool OBCameraNode::deactivateStreams() {
 }
 
 void OBCameraNode::setupTriggerFailureMonitor() {
-  if (!service_trigger_enabled_ && !software_trigger_enabled_ || !enable_trigger_failure_monitor_) {
+  if ((!service_trigger_enabled_ && !software_trigger_enabled_) || !enable_trigger_failure_monitor_) {
     return;
   }
   RCLCPP_INFO_STREAM(logger_, "Setup trigger failure monitor timer with period "

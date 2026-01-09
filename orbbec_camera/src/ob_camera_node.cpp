@@ -2187,6 +2187,7 @@ void OBCameraNode::triggerFailureMonitorTimerCallback() {
       RCLCPP_ERROR(logger_, "Failed to deactivate streams during trigger failure recovery");
       return;
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     bool activate_success = activateStreams();
     if (!activate_success) {
       RCLCPP_ERROR(logger_, "Failed to reactivate streams during trigger failure recovery");

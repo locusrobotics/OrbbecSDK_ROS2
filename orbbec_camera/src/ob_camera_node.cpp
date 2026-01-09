@@ -2169,7 +2169,8 @@ void OBCameraNode::setupTriggerFailureMonitor() {
   RCLCPP_INFO_STREAM(logger_, "Setup trigger failure monitor timer with period "
                                   << trigger_failure_monitor_timer_period_ << " seconds");
   trigger_failure_monitor_timer_ = node_->create_wall_timer(
-      std::chrono::duration<double>(trigger_failure_monitor_timer_period_), triggerFailureMonitorTimerCallback);
+      std::chrono::duration<double>(trigger_failure_monitor_timer_period_),
+      std::bind(&OBCameraNode::triggerFailureMonitorTimerCallback, this));
 }
 
 // timer callback to monitor trigger failure

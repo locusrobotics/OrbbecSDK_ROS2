@@ -1206,7 +1206,7 @@ void OBCameraNode::handleChangeStateRequest(
       return;
     }
     // Activate streams
-    auto success = activate_streams();
+    auto success = activateStreams();
     response->success = success;
   }
   else if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE) {
@@ -1217,7 +1217,7 @@ void OBCameraNode::handleChangeStateRequest(
       return;
     }
     // Deactivate streams
-    auto success = deactivate_streams();
+    auto success = deactivateStreams();
     response->success = success;
   }
   else {

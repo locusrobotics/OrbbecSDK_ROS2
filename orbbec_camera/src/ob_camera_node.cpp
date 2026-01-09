@@ -157,6 +157,10 @@ void OBCameraNode::clean() noexcept {
     if (diagnostic_updater_) {
       diagnostic_updater_.reset();
     }
+    if (trigger_failure_monitor_timer_) {
+      trigger_failure_monitor_timer_->cancel();
+      trigger_failure_monitor_timer_.reset();
+    }
   } catch (...) {
     // Ignore exceptions during diagnostic cleanup
   }
@@ -1864,6 +1868,11 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
   setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
   setAndGetNodeParameter<bool>(service_trigger_enabled_, "service_trigger_enabled", false);
+  setAndGetNodeParameter<bool>(enable_trigger_failure_monitor_,
+                               "enable_trigger_failure_monitor", service_trigger_enabled_);
+  setAndGetNodeParameter<int>(trigger_failures_before_recovery_, "trigger_failures_before_recovery", 2);
+  setAndGetNodeParameter<double>(trigger_failure_monitor_timer_period_,
+                                 "trigger_failure_monitor_timer_period", 1.0);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {
@@ -2038,6 +2047,7 @@ void OBCameraNode::setupTopics() {
     setupCameraCtrlServices();
     setupPublishers();
     setupDiagnosticUpdater();
+    setupTriggerFailureMonitor();
   } catch (const ob::Error &e) {
     RCLCPP_ERROR_STREAM(logger_, "Failed to setup topics: " << e.getMessage());
     throw std::runtime_error(e.getMessage());
@@ -2108,6 +2118,80 @@ void OBCameraNode::onTemperatureUpdate(diagnostic_updater::DiagnosticStatusWrapp
   } catch (...) {
     RCLCPP_ERROR(logger_, "Failed to TemperatureUpdate3: Device is deactivated/disconnected!");
     status.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Unknown error");
+  }
+}
+
+bool OBCameraNode::activateStreams() {
+  try {
+    setupProfiles();
+    startStreams();
+    RCLCPP_INFO_STREAM(logger_, "Camera streams are now ON");
+    return true;
+  } catch (const ob::Error& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.what());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: Unknown Error");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  }
+}
+
+bool OBCameraNode::deactivateStreams() {
+  try {
+    stopStreams();
+    RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
+    return true;
+  } catch (const ob::Error& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.what());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: Unknown Error");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  }
+}
+
+void OBCameraNode::setupTriggerFailureMonitor() {
+  if (!service_trigger_enabled_ && !software_trigger_enabled_ || !enable_trigger_failure_monitor_) {
+    return;
+  }
+  RCLCPP_INFO_STREAM(logger_, "Setup trigger failure monitor timer with period "
+                                  << trigger_failure_monitor_timer_period_ << " seconds");
+  trigger_failure_monitor_timer_ = node_->create_wall_timer(
+      std::chrono::duration<double>(trigger_failure_monitor_timer_period_), triggerFailureMonitorTimerCallback);
+}
+
+// timer callback to monitor trigger failure
+void OBCameraNode::triggerFailureMonitorTimerCallback() {
+  if (!pipeline_started_.load()) {
+    return;
+  }
+  if (consecutive_trigger_failures_ >= trigger_failures_before_recovery_) {
+    RCLCPP_WARN_STREAM(logger_, "Maximum consecutive trigger failures reached ("
+                                    << consecutive_trigger_failures_
+                                    << "), restarting streams...");
+    bool deactivate_success = deactivateStreams();
+    if (!deactivate_success) {
+      RCLCPP_ERROR(logger_, "Failed to deactivate streams during trigger failure recovery");
+      return;
+    }
+    bool activate_success = activateStreams();
+    if (!activate_success) {
+      RCLCPP_ERROR(logger_, "Failed to reactivate streams during trigger failure recovery");
+      return;
+    }
+    consecutive_trigger_failures_ = 0;
   }
 }
 

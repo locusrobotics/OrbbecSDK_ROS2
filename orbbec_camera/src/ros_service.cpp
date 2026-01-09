@@ -1205,23 +1205,9 @@ void OBCameraNode::handleChangeStateRequest(
       response->success = true;
       return;
     }
-    try {
-      setupProfiles();
-      startStreams();
-      RCLCPP_INFO_STREAM(logger_, "Camera streams are now ON");
-    } catch (const ob::Error& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.getMessage());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (const std::exception& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.what());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (...) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: Unknown Error");
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    }
+    // Activate streams
+    auto success = activate_streams();
+    response->success = success;
   }
   else if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE) {
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn OFF camera streams");
@@ -1230,22 +1216,9 @@ void OBCameraNode::handleChangeStateRequest(
       response->success = true;
       return;
     }
-    try {
-      stopStreams();
-      RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
-    } catch (const ob::Error& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (const std::exception& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.what());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (...) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: Unknown Error");
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    }
+    // Deactivate streams
+    auto success = deactivate_streams();
+    response->success = success;
   }
   else {
     response->success = false;
@@ -1282,19 +1255,27 @@ void OBCameraNode::sendSoftwareTriggerCallback(
         response->depth_image = *(depth_image_);
         response->rgb_camera_info = color_image_camera_info_;
         response->depth_camera_info = depth_image_camera_info_;
+        // reset failure count on success
+        consecutive_trigger_failures_ = 0;
       } else {
         response->success = false;
         response->message = "Failed to capture images";
+        consecutive_trigger_failures_ += 1;
+        RCLCPP_WARN_STREAM(logger_, "Failed to capture images. Consecutive failures: "
+                                       << consecutive_trigger_failures_);
       }
     } catch (const ob::Error& e) {
       response->message = e.getMessage();
       response->success = false;
+      consecutive_trigger_failures_ += 1;
     } catch (const std::exception& e) {
       response->message = e.what();
       response->success = false;
+      consecutive_trigger_failures_ += 1;
     } catch (...) {
       response->message = "unknown error";
       response->success = false;
+      consecutive_trigger_failures_ += 1;
     }
     resetCaptureServiceVariables();
   } else {

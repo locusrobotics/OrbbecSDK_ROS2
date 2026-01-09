@@ -406,7 +406,11 @@ class OBCameraNode {
   
   void handleChangeStateRequest(
       const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
-      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);  
+      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);
+
+  bool activateStreams();
+
+  bool deactivateStreams();
 
   void publishPointCloud(const std::shared_ptr<ob::FrameSet>& frame_set);
 
@@ -805,6 +809,7 @@ class OBCameraNode {
   // soft ware trigger
   rclcpp::TimerBase::SharedPtr software_trigger_timer_;
   rclcpp::TimerBase::SharedPtr diagnostic_timer_;
+  rclcpp::TimerBase::SharedPtr trigger_failure_monitor_timer_;
   std::chrono::milliseconds software_trigger_period_{33};
   bool enable_heartbeat_ = false;
   bool enable_color_undistortion_ = false;
@@ -866,5 +871,12 @@ class OBCameraNode {
 
   std::string intra_camera_sync_reference_;
   rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
+
+  // software trigger failure monitor + recovery
+  bool enable_trigger_failure_monitor_{false}
+  int consecutive_trigger_failures_{0};
+  int trigger_failures_before_recovery_{2};
+  double trigger_failure_monitor_timer_period_{1.0};  // seconds
+
 };
 }  // namespace orbbec_camera

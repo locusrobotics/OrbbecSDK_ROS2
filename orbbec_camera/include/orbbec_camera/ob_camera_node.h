@@ -873,7 +873,7 @@ class OBCameraNode {
   rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
 
   // software trigger failure monitor + recovery
-  bool enable_trigger_failure_monitor_{false}
+  bool enable_trigger_failure_monitor_{false};
   int consecutive_trigger_failures_{0};
   int trigger_failures_before_recovery_{2};
   double trigger_failure_monitor_timer_period_{1.0};  // seconds

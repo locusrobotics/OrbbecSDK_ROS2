@@ -4,11 +4,11 @@
 namespace orbbec_camera {
 
 TriggerFailureMonitor::TriggerFailureMonitor(rclcpp::Node* node,
-                                             const rclcpp::Logger& logger)
-    : node_(node), logger_(logger) {
-  
-  setAndGetNodeParameter<int>(failures_before_recovery_, "trigger_failures_before_recovery", 2);
-  setAndGetNodeParameter<double>(timer_period_seconds_, "trigger_failure_monitor_timer_period", 1.0);
+                                             const rclcpp::Logger& logger,
+                                             int failures_before_recovery,
+                                             double timer_period_seconds)
+    : node_(node), logger_(logger), failures_before_recovery_(failures_before_recovery),
+      timer_period_seconds_(timer_period_seconds) {
 
   RCLCPP_INFO_STREAM(logger_, "Setting up trigger failure monitor with period "
                                   << timer_period_seconds_ << " seconds, "

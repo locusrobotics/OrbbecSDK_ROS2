@@ -2160,13 +2160,17 @@ bool OBCameraNode::deactivateStreams() {
 void OBCameraNode::setupTriggerFailureMonitor() {
   // Default trigger failure monitor to be enabled if service trigger is enabled
   bool enabled;
+  int failures_before_recovery;
+  double timer_period_seconds;
   setAndGetNodeParameter<bool>(enabled, "enable_trigger_failure_monitor", service_trigger_enabled_);
+  setAndGetNodeParameter<int>(failures_before_recovery, "trigger_failures_before_recovery", 2);
+  setAndGetNodeParameter<double>(timer_period_seconds, "trigger_failure_monitor_timer_period", 1.0);
   if (!enabled) {
     RCLCPP_INFO_STREAM(logger_, "Trigger failure monitor is disabled");
     return;
   }
   trigger_failure_monitor_ = std::make_unique<TriggerFailureMonitor>(
-      node_, logger_);
+      node_, logger_, failures_before_recovery, timer_period_seconds);
   // Set up callbacks for stream control and pipeline status
   trigger_failure_monitor_->setActivateCallback(
       std::bind(&OBCameraNode::activateStreams, this));

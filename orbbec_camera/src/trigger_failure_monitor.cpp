@@ -7,7 +7,9 @@ TriggerFailureMonitor::TriggerFailureMonitor(rclcpp::Node* node,
                                              const rclcpp::Logger& logger,
                                              int failures_before_recovery,
                                              double timer_period_seconds)
-    : node_(node), logger_(logger), failures_before_recovery_(failures_before_recovery),
+    : node_(node), 
+      logger_(logger), 
+      failures_before_recovery_(failures_before_recovery),
       timer_period_seconds_(timer_period_seconds) {
 
   RCLCPP_INFO_STREAM(logger_, "Setting up trigger failure monitor with period "

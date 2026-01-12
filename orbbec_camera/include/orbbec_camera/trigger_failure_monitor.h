@@ -27,9 +27,13 @@ class TriggerFailureMonitor {
    * @brief Constructor
    * @param node ROS node for creating timer
    * @param logger Logger for diagnostic messages
+   * @param failures_before_recovery Number of failures before recovery
+   * @param timer_period_seconds Timer period in seconds
    */
   TriggerFailureMonitor(rclcpp::Node* node,
-                        const rclcpp::Logger& logger);
+                        const rclcpp::Logger& logger,
+                        int failures_before_recovery,
+                        double timer_period_seconds);
 
   /**
    * @brief Destructor - cleans up timer

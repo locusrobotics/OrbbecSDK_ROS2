@@ -157,9 +157,9 @@ void OBCameraNode::clean() noexcept {
     if (diagnostic_updater_) {
       diagnostic_updater_.reset();
     }
-    if (trigger_failure_monitor_timer_) {
-      trigger_failure_monitor_timer_->cancel();
-      trigger_failure_monitor_timer_.reset();
+    if (trigger_failure_monitor_) {
+      trigger_failure_monitor_->cleanup();
+      trigger_failure_monitor_.reset();
     }
   } catch (...) {
     // Ignore exceptions during diagnostic cleanup
@@ -1868,11 +1868,6 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
   setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
   setAndGetNodeParameter<bool>(service_trigger_enabled_, "service_trigger_enabled", false);
-  setAndGetNodeParameter<bool>(enable_trigger_failure_monitor_,
-                               "enable_trigger_failure_monitor", service_trigger_enabled_);
-  setAndGetNodeParameter<int>(trigger_failures_before_recovery_, "trigger_failures_before_recovery", 2);
-  setAndGetNodeParameter<double>(trigger_failure_monitor_timer_period_,
-                                 "trigger_failure_monitor_timer_period", 1.0);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {
@@ -2163,38 +2158,22 @@ bool OBCameraNode::deactivateStreams() {
 }
 
 void OBCameraNode::setupTriggerFailureMonitor() {
-  if ((!service_trigger_enabled_ && !software_trigger_enabled_) || !enable_trigger_failure_monitor_) {
+  // Default trigger failure monitor to be enabled if service trigger is enabled
+  bool enabled;
+  setAndGetNodeParameter<bool>(enabled, "enable_trigger_failure_monitor", service_trigger_enabled_);
+  if (!enabled) {
+    RCLCPP_INFO_STREAM(logger_, "Trigger failure monitor is disabled");
     return;
   }
-  RCLCPP_INFO_STREAM(logger_, "Setup trigger failure monitor timer with period "
-                                  << trigger_failure_monitor_timer_period_ << " seconds");
-  trigger_failure_monitor_timer_ = node_->create_wall_timer(
-      std::chrono::duration<double>(trigger_failure_monitor_timer_period_),
-      std::bind(&OBCameraNode::triggerFailureMonitorTimerCallback, this));
-}
-
-// timer callback to monitor trigger failure
-void OBCameraNode::triggerFailureMonitorTimerCallback() {
-  if (!pipeline_started_.load()) {
-    return;
-  }
-  if (consecutive_trigger_failures_ >= trigger_failures_before_recovery_) {
-    RCLCPP_WARN_STREAM(logger_, "Maximum consecutive trigger failures reached ("
-                                    << consecutive_trigger_failures_
-                                    << "), restarting streams...");
-    bool deactivate_success = deactivateStreams();
-    if (!deactivate_success) {
-      RCLCPP_ERROR(logger_, "Failed to deactivate streams during trigger failure recovery");
-      return;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(250));
-    bool activate_success = activateStreams();
-    if (!activate_success) {
-      RCLCPP_ERROR(logger_, "Failed to reactivate streams during trigger failure recovery");
-      return;
-    }
-    consecutive_trigger_failures_ = 0;
-  }
+  trigger_failure_monitor_ = std::make_unique<TriggerFailureMonitor>(
+      node_, logger_);
+  // Set up callbacks for stream control and pipeline status
+  trigger_failure_monitor_->setActivateCallback(
+      std::bind(&OBCameraNode::activateStreams, this));
+  trigger_failure_monitor_->setDeactivateCallback(
+      std::bind(&OBCameraNode::deactivateStreams, this));
+  trigger_failure_monitor_->setPipelineStatusCallback(
+      [this]() { return pipeline_started_.load(); });
 }
 
 void OBCameraNode::setupDiagnosticUpdater() {

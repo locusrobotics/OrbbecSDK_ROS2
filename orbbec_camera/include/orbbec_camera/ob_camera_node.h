@@ -70,6 +70,7 @@
 #include "orbbec_camera/image_publisher.h"
 #include "orbbec_camera/fps_counter.hpp"
 #include "orbbec_camera/fps_delay_status.hpp"
+#include "orbbec_camera/trigger_failure_monitor.h"
 #include "jpeg_decoder.h"
 #include <std_msgs/msg/string.hpp>
 #include <fcntl.h>
@@ -411,10 +412,6 @@ class OBCameraNode {
   bool activateStreams();
 
   bool deactivateStreams();
-
-  void setupTriggerFailureMonitor();
-
-  void triggerFailureMonitorTimerCallback();
 
   void publishPointCloud(const std::shared_ptr<ob::FrameSet>& frame_set);
 
@@ -813,7 +810,6 @@ class OBCameraNode {
   // soft ware trigger
   rclcpp::TimerBase::SharedPtr software_trigger_timer_;
   rclcpp::TimerBase::SharedPtr diagnostic_timer_;
-  rclcpp::TimerBase::SharedPtr trigger_failure_monitor_timer_;
   std::chrono::milliseconds software_trigger_period_{33};
   bool enable_heartbeat_ = false;
   bool enable_color_undistortion_ = false;
@@ -876,11 +872,7 @@ class OBCameraNode {
   std::string intra_camera_sync_reference_;
   rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
 
-  // software trigger failure monitor + recovery
-  bool enable_trigger_failure_monitor_{false};
-  int consecutive_trigger_failures_{0};
-  int trigger_failures_before_recovery_{2};
-  double trigger_failure_monitor_timer_period_{1.0};  // seconds
-
+  // Trigger failure monitor for automatic recovery
+  std::unique_ptr<TriggerFailureMonitor> trigger_failure_monitor_;
 };
 }  // namespace orbbec_camera

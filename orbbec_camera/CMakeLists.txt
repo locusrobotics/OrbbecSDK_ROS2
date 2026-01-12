@@ -129,6 +129,7 @@ set(SOURCE_FILES
     src/ros_param_backend.cpp
     src/ros_service.cpp
     src/synced_imu_publisher.cpp
+    src/trigger_failure_monitor.cpp
     src/utils.cpp
     src/jpeg_decoder.cpp
 )

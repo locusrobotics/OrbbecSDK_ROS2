@@ -1256,26 +1256,34 @@ void OBCameraNode::sendSoftwareTriggerCallback(
         response->rgb_camera_info = color_image_camera_info_;
         response->depth_camera_info = depth_image_camera_info_;
         // reset failure count on success
-        consecutive_trigger_failures_ = 0;
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordSuccess();
+        }
       } else {
         response->success = false;
         response->message = "Failed to capture images";
-        consecutive_trigger_failures_ += 1;
-        RCLCPP_WARN_STREAM(logger_, "Failed to capture images. Consecutive failures: "
-                                       << consecutive_trigger_failures_);
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordFailure();
+        }
       }
     } catch (const ob::Error& e) {
       response->message = e.getMessage();
       response->success = false;
-      consecutive_trigger_failures_ += 1;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
     } catch (const std::exception& e) {
       response->message = e.what();
       response->success = false;
-      consecutive_trigger_failures_ += 1;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
     } catch (...) {
       response->message = "unknown error";
       response->success = false;
-      consecutive_trigger_failures_ += 1;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
     }
     resetCaptureServiceVariables();
   } else {

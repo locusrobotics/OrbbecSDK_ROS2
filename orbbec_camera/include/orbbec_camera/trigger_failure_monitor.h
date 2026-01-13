@@ -78,6 +78,11 @@ class TriggerFailureMonitor {
    */
   void cleanup();
 
+  /**
+   * @brief Flag indicating if recovery is in progress
+   */
+  bool isRecoveryInProgress() const;
+
  private:
   /**
    * @brief Timer callback to check for failures and trigger recovery
@@ -101,6 +106,7 @@ class TriggerFailureMonitor {
   PipelineStatusCallback pipeline_status_callback_; 
   int failures_before_recovery_{2};
   double timer_period_seconds_{1.0}; 
+  bool recovery_in_progress_{false};
 };
 
 }  // namespace orbbec_camera

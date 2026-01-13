@@ -1197,6 +1197,14 @@ void OBCameraNode::handleChangeStateRequest(
   RCLCPP_INFO(logger_, "Received request to change state '%d' with label '%s'",
                      request->transition.id, request->transition.label.c_str());
   
+  if (trigger_failure_monitor_) {
+    bool recovery_in_progress = trigger_failure_monitor_->isRecoveryInProgress();
+    if (recovery_in_progress) {
+      RCLCPP_WARN_STREAM(logger_, "Trigger failure recovery in progress. Ignoring state change request.");
+      response->success = false;
+      return;
+    }
+  }
   response->success = true;
   if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE) {
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn ON camera streams");

@@ -73,14 +73,17 @@ void TriggerFailureMonitor::timerCallback() {
 }
 
 bool TriggerFailureMonitor::cycleStreams() {
+  recovery_in_progress_ = true;
   // Deactivate streams
   if (!deactivate_callback_) {
     RCLCPP_ERROR(logger_, "Deactivate callback not set, cannot perform recovery");
+    recovery_in_progress_ = false;
     return false;
   }
 
   if (!deactivate_callback_()) {
     RCLCPP_ERROR(logger_, "Failed to deactivate streams during trigger failure recovery");
+    recovery_in_progress_ = false;
     return false;
   }
 
@@ -89,15 +92,22 @@ bool TriggerFailureMonitor::cycleStreams() {
   // Reactivate streams
   if (!activate_callback_) {
     RCLCPP_ERROR(logger_, "Activate callback not set, cannot complete recovery");
+    recovery_in_progress_ = false;
     return false;
   }
 
   if (!activate_callback_()) {
     RCLCPP_ERROR(logger_, "Failed to reactivate streams during trigger failure recovery");
+    recovery_in_progress_ = false;
     return false;
   }
 
+  recovery_in_progress_ = false;
   return true;
+}
+
+bool TriggerFailureMonitor::isRecoveryInProgress() const {
+  return recovery_in_progress_;
 }
 
 }  // namespace orbbec_camera

@@ -163,7 +163,7 @@
     name="${name}_color_joint"
     type="fixed">
     <origin
-      xyz="0.034014 0.02375 0.014048"
+      xyz="${0.034014 - 0.00408} 0.02375 0.014048"
       rpy="0 0 0" />
     <parent
       link="${name}_link" />

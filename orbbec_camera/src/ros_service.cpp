@@ -1197,6 +1197,14 @@ void OBCameraNode::handleChangeStateRequest(
   RCLCPP_INFO(logger_, "Received request to change state '%d' with label '%s'",
                      request->transition.id, request->transition.label.c_str());
   
+  if (trigger_failure_monitor_) {
+    bool recovery_in_progress = trigger_failure_monitor_->isRecoveryInProgress();
+    if (recovery_in_progress) {
+      RCLCPP_WARN_STREAM(logger_, "Trigger failure recovery in progress. Ignoring state change request.");
+      response->success = false;
+      return;
+    }
+  }
   response->success = true;
   if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE) {
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn ON camera streams");
@@ -1205,23 +1213,9 @@ void OBCameraNode::handleChangeStateRequest(
       response->success = true;
       return;
     }
-    try {
-      setupProfiles();
-      startStreams();
-      RCLCPP_INFO_STREAM(logger_, "Camera streams are now ON");
-    } catch (const ob::Error& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.getMessage());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (const std::exception& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.what());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (...) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: Unknown Error");
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    }
+    // Activate streams
+    auto success = activateStreams();
+    response->success = success;
   }
   else if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE) {
     RCLCPP_INFO_STREAM(logger_, "Recieved request to turn OFF camera streams");
@@ -1230,22 +1224,9 @@ void OBCameraNode::handleChangeStateRequest(
       response->success = true;
       return;
     }
-    try {
-      stopStreams();
-      RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
-    } catch (const ob::Error& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (const std::exception& e) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.what());
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    } catch (...) {
-      response->success = false;
-      RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: Unknown Error");
-      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
-    }
+    // Deactivate streams
+    auto success = deactivateStreams();
+    response->success = success;
   }
   else {
     response->success = false;
@@ -1282,19 +1263,35 @@ void OBCameraNode::sendSoftwareTriggerCallback(
         response->depth_image = *(depth_image_);
         response->rgb_camera_info = color_image_camera_info_;
         response->depth_camera_info = depth_image_camera_info_;
+        // reset failure count on success
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordSuccess();
+        }
       } else {
         response->success = false;
         response->message = "Failed to capture images";
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordFailure();
+        }
       }
     } catch (const ob::Error& e) {
       response->message = e.getMessage();
       response->success = false;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
     } catch (const std::exception& e) {
       response->message = e.what();
       response->success = false;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
     } catch (...) {
       response->message = "unknown error";
       response->success = false;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
     }
     resetCaptureServiceVariables();
   } else {

@@ -157,6 +157,10 @@ void OBCameraNode::clean() noexcept {
     if (diagnostic_updater_) {
       diagnostic_updater_.reset();
     }
+    if (trigger_failure_monitor_) {
+      trigger_failure_monitor_->cleanup();
+      trigger_failure_monitor_.reset();
+    }
   } catch (...) {
     // Ignore exceptions during diagnostic cleanup
   }
@@ -2038,6 +2042,7 @@ void OBCameraNode::setupTopics() {
     setupCameraCtrlServices();
     setupPublishers();
     setupDiagnosticUpdater();
+    setupTriggerFailureMonitor();
   } catch (const ob::Error &e) {
     RCLCPP_ERROR_STREAM(logger_, "Failed to setup topics: " << e.getMessage());
     throw std::runtime_error(e.getMessage());
@@ -2109,6 +2114,70 @@ void OBCameraNode::onTemperatureUpdate(diagnostic_updater::DiagnosticStatusWrapp
     RCLCPP_ERROR(logger_, "Failed to TemperatureUpdate3: Device is deactivated/disconnected!");
     status.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Unknown error");
   }
+}
+
+bool OBCameraNode::activateStreams() {
+  try {
+    setupProfiles();
+    startStreams();
+    RCLCPP_INFO_STREAM(logger_, "Camera streams are now ON");
+    return true;
+  } catch (const ob::Error& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.what());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: Unknown Error");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  }
+}
+
+bool OBCameraNode::deactivateStreams() {
+  try {
+    stopStreams();
+    RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
+    return true;
+  } catch (const ob::Error& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.what());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: Unknown Error");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  }
+}
+
+void OBCameraNode::setupTriggerFailureMonitor() {
+  // Default trigger failure monitor to be enabled if service trigger is enabled
+  bool enabled;
+  int failures_before_recovery;
+  double timer_period_seconds;
+  setAndGetNodeParameter<bool>(enabled, "enable_trigger_failure_monitor", service_trigger_enabled_);
+  setAndGetNodeParameter<int>(failures_before_recovery, "trigger_failures_before_recovery", 2);
+  setAndGetNodeParameter<double>(timer_period_seconds, "trigger_failure_monitor_timer_period", 1.0);
+  if (!enabled) {
+    RCLCPP_INFO_STREAM(logger_, "Trigger failure monitor is disabled");
+    return;
+  }
+  trigger_failure_monitor_ = std::make_unique<TriggerFailureMonitor>(
+      node_, logger_, failures_before_recovery, timer_period_seconds);
+  // Set up callbacks for stream control and pipeline status
+  trigger_failure_monitor_->setActivateCallback(
+      std::bind(&OBCameraNode::activateStreams, this));
+  trigger_failure_monitor_->setDeactivateCallback(
+      std::bind(&OBCameraNode::deactivateStreams, this));
+  trigger_failure_monitor_->setPipelineStatusCallback(
+      [this]() { return pipeline_started_.load(); });
 }
 
 void OBCameraNode::setupDiagnosticUpdater() {

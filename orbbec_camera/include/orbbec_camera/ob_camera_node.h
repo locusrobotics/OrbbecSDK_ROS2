@@ -70,6 +70,7 @@
 #include "orbbec_camera/image_publisher.h"
 #include "orbbec_camera/fps_counter.hpp"
 #include "orbbec_camera/fps_delay_status.hpp"
+#include "orbbec_camera/trigger_failure_monitor.h"
 #include "jpeg_decoder.h"
 #include <std_msgs/msg/string.hpp>
 #include <fcntl.h>
@@ -406,7 +407,13 @@ class OBCameraNode {
   
   void handleChangeStateRequest(
       const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
-      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);  
+      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);
+
+  bool activateStreams();
+
+  bool deactivateStreams();
+
+  void setupTriggerFailureMonitor();
 
   void publishPointCloud(const std::shared_ptr<ob::FrameSet>& frame_set);
 
@@ -866,5 +873,8 @@ class OBCameraNode {
 
   std::string intra_camera_sync_reference_;
   rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
+
+  // Trigger failure monitor for automatic recovery
+  std::unique_ptr<TriggerFailureMonitor> trigger_failure_monitor_;
 };
 }  // namespace orbbec_camera

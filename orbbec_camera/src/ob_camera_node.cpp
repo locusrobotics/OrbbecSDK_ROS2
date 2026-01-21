@@ -3305,7 +3305,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     publishMetadata(frame, stream_index, camera_info.header);
   }
   CHECK_NOTNULL(image_publishers_[stream_index]);
-  if (image_publishers_[stream_index]->get_subscription_count() == 0) {
+  if (image_publishers_[stream_index]->get_subscription_count() == 0 && !service_capture_started_) {
     return;
   }
   if (image.empty() || image.cols != width || image.rows != height) {

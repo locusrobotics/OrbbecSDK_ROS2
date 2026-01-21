@@ -104,8 +104,8 @@ set(COMMON_LIBRARIES
     ${ORBBEC_SDK_LIBRARIES}
     ${OpenCV_LIBS}
     Eigen3::Eigen
-    -lOrbbecSDK
     -L${ORBBEC_LIBS_DIR}
+    -lOrbbecSDK
     Threads::Threads
     -lrt
     -ldw

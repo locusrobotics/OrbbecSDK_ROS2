@@ -276,30 +276,6 @@ void OBCameraNode::setupCameraCtrlServices() {
                               std::placeholders::_1, std::placeholders::_2));
 
 }
-void OBCameraNode::setStreamsEnableCallback(
-    const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
-    std::shared_ptr<std_srvs::srv::SetBool::Response> response) {
-  try {
-    if (request->data) {
-      startStreams();
-      response->success = true;
-      response->message = "streams started";
-    } else {
-      stopStreams();
-      response->success = true;
-      response->message = "streams stopped";
-    }
-  } catch (const ob::Error& e) {
-    response->success = false;
-    response->message = e.getMessage();
-  } catch (const std::exception& e) {
-    response->success = false;
-    response->message = e.what();
-  } catch (...) {
-    response->success = false;
-    response->message = "unknown error";
-  }
-}
 
 void OBCameraNode::getPointCloudDecimationCallback(
     const std::shared_ptr<GetInt32::Request>& request,

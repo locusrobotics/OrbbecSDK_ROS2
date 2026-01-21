@@ -3286,27 +3286,6 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     camera_info.p.at(2) = undistort_result.new_intrinsic.cx;
     camera_info.p.at(6) = undistort_result.new_intrinsic.cy;
   }
-  sensor_msgs::msg::CameraInfo camera_info{};
-  if (color_info_manager_ && color_info_manager_->isCalibrated() && stream_index == COLOR) {
-    camera_info = color_info_manager_->getCameraInfo();
-    camera_info.header.stamp = timestamp;
-    camera_info.header.frame_id = frame_id;
-    camera_info.width = width;
-    camera_info.height = height;
-  } else if (ir_info_manager_ && ir_info_manager_->isCalibrated() &&
-             (stream_index == INFRA1 || stream_index == INFRA2 || stream_index == DEPTH)) {
-    camera_info = ir_info_manager_->getCameraInfo();
-    camera_info.header.stamp = timestamp;
-    camera_info.header.frame_id = frame_id;
-    camera_info.width = width;
-    camera_info.height = height;
-  } else {
-    camera_info = convertToCameraInfo(intrinsic, distortion, width);
-    camera_info.header.stamp = timestamp;
-    camera_info.header.frame_id = frame_id;
-    camera_info.width = width;
-    camera_info.height = height;
-  }
   if (frame->getType() == OB_FRAME_IR_RIGHT && enable_stream_[INFRA1]) {
     auto stream_profile = frame->getStreamProfile();
     CHECK_NOTNULL(stream_profile);
@@ -3333,7 +3312,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     image.create(height, width, image_format_[stream_index]);
   }
   if (frame->getType() == OB_FRAME_COLOR && !is_color_frame_decoded_) {
-    RCLCPP_DEBUG(logger_, "color frame is not decoded");
+    RCLCPP_ERROR(logger_, "color frame is not decoded");
     return;
   }
   if (frame->getType() == OB_FRAME_COLOR && frame->format() != OB_FORMAT_Y8 &&

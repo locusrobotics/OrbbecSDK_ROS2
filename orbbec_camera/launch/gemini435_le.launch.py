@@ -107,6 +107,7 @@ def generate_launch_description():
         DeclareLaunchArgument('enable_color_auto_exposure', default_value='true'),
         DeclareLaunchArgument('color_ae_max_exposure', default_value='-1'),
         DeclareLaunchArgument('color_brightness', default_value='-1'),
+        DeclareLaunchArgument('color_roi_brightness', default_value='-1'),
         DeclareLaunchArgument('color_sharpness', default_value='-1'),
         DeclareLaunchArgument('color_gamma', default_value='-1'),
         DeclareLaunchArgument('color_saturation', default_value='-1'),
@@ -181,6 +182,7 @@ def generate_launch_description():
         DeclareLaunchArgument('net_device_port', default_value='0'),
         DeclareLaunchArgument('exposure_range_mode', default_value='default'),#default, ultimate or regular
         DeclareLaunchArgument('log_level', default_value='none'),
+        DeclareLaunchArgument('log_file_name', default_value=''),
         DeclareLaunchArgument('enable_publish_extrinsic', default_value='false'),
         DeclareLaunchArgument('enable_d2c_viewer', default_value='false'),
         DeclareLaunchArgument('disparity_to_depth_mode', default_value='HW'),
@@ -231,7 +233,8 @@ def generate_launch_description():
         DeclareLaunchArgument('diagnostic_period', default_value='1.0'), # seconds
         DeclareLaunchArgument('enable_laser', default_value='true'),
         DeclareLaunchArgument('depth_precision', default_value=''),
-        DeclareLaunchArgument('device_preset', default_value='Default'),
+        DeclareLaunchArgument('depth_work_mode', default_value='AMR Perception'),
+        DeclareLaunchArgument('preset_resolution_config', default_value='1280, 800, 1, 1'),
         DeclareLaunchArgument('retry_on_usb3_detection_failure', default_value='false'),
         DeclareLaunchArgument('laser_energy_level', default_value='-1'),
         DeclareLaunchArgument('enable_sync_host_time', default_value='true'),
@@ -260,7 +263,7 @@ def generate_launch_description():
         #color image transport plugins
         DeclareLaunchArgument('color.image_raw.enable_pub_plugins',default_value='["image_transport/compressed", "image_transport/raw", "image_transport/theora"]'),
         #depth image transport plugins
-        DeclareLaunchArgument('depth.image_raw.enable_pub_plugins',default_value='["image_transport/compressedDepth", "image_transport/raw", "image_transport/theora"]'),
+        DeclareLaunchArgument('depth.image_raw.enable_pub_plugins',default_value='["image_transport/compressedDepth", "image_transport/raw"]'),
         #infra1
         DeclareLaunchArgument('left_ir.image_raw.enable_pub_plugins',default_value='["image_transport/compressed", "image_transport/raw", "image_transport/theora"]'),
         #infra2

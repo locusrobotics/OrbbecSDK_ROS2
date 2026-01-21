@@ -135,6 +135,13 @@ void OBCameraNode::setupCameraCtrlServices() {
         (void)request_header;
         getLdpStatusCallback(request, response);
       });
+  get_laser_status_srv_ = node_->create_service<GetBool>(
+      "get_laser_status", [this](const std::shared_ptr<rmw_request_id_t> request_header,
+                                 const std::shared_ptr<GetBool::Request> request,
+                                 std::shared_ptr<GetBool::Response> response) {
+        (void)request_header;
+        getLaserStatusCallback(request, response);
+      });
   set_ptp_config_srv_ = node_->create_service<SetBool>(
       "set_ptp_config", [this](const std::shared_ptr<rmw_request_id_t> request_header,
                                const std::shared_ptr<SetBool::Request> request,
@@ -225,40 +232,120 @@ void OBCameraNode::setupCameraCtrlServices() {
         sendSoftwareTriggerCallback(request, response);
       });
   write_customerdata_srv_ = node_->create_service<SetString>(
-      camera_name_ + "/" + "set_write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
+      "write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
                                     std::shared_ptr<SetString::Response> response) {
         writeCustomerDataCallback(request, response);
       });
   read_customerdata_srv_ = node_->create_service<GetString>(
-      camera_name_ + "/" + "set_read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
+      "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
                                    std::shared_ptr<GetString::Response> response) {
         readCustomerDataCallback(request, response);
+      });
+  set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
+      "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
+                                      std::shared_ptr<SetUserCalibParams::Response> response) {
+        setUserCalibParamsCallback(request, response);
+      });
+  get_user_calib_params_srv_ = node_->create_service<GetUserCalibParams>(
+      "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
+                                      std::shared_ptr<GetUserCalibParams::Response> response) {
+        getUserCalibParamsCallback(request, response);
+      });
+  set_streams_enable_srv_ = node_->create_service<SetBool>(
+      "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
+                                   std::shared_ptr<SetBool::Response> response) {
+        setStreamsEnableCallback(request, response);
+      });
+  get_streams_enable_srv_ = node_->create_service<GetBool>(
+      "get_streams_enable", [this](const std::shared_ptr<GetBool::Request> request,
+                                   std::shared_ptr<GetBool::Response> response) {
+        getStreamsEnableCallback(request, response);
+      });
+  set_point_cloud_decimation_srv_ = node_->create_service<SetInt32>(
+      "set_point_cloud_decimation", [this](const std::shared_ptr<SetInt32::Request> request,
+                                            std::shared_ptr<SetInt32::Response> response) {
+        setPointCloudDecimationCallback(request, response);
+      });
+  get_point_cloud_decimation_srv_ = node_->create_service<GetInt32>(
+      "get_point_cloud_decimation", [this](const std::shared_ptr<GetInt32::Request> request,
+                                            std::shared_ptr<GetInt32::Response> response) {
+        getPointCloudDecimationCallback(request, response);
       });
   change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
       camera_name_ + "/" + "change_state", std::bind(&OBCameraNode::handleChangeStateRequest, this,
                               std::placeholders::_1, std::placeholders::_2));
 
-  set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
-      camera_name_ + "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
-                                      std::shared_ptr<SetUserCalibParams::Response> response) {
-        setUserCalibParamsCallback(request, response);
-      });
-  get_user_calib_params_srv_ = node_->create_service<GetUserCalibParams>(
-      camera_name_ + "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
-                                      std::shared_ptr<GetUserCalibParams::Response> response) {
-        getUserCalibParamsCallback(request, response);
-      });
-  set_streams_enable_srv_ = node_->create_service<SetBool>(
-      camera_name_ + "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
-                                   std::shared_ptr<SetBool::Response> response) {
-        setStreamsEnableCallback(request, response);
-      });
-  get_streams_enable_srv_ = node_->create_service<GetBool>(
-      camera_name_ + "get_streams_enable", [this](const std::shared_ptr<GetBool::Request> request,
-                                   std::shared_ptr<GetBool::Response> response) {
-        getStreamsEnableCallback(request, response);
-      });
 }
+void OBCameraNode::setStreamsEnableCallback(
+    const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+    std::shared_ptr<std_srvs::srv::SetBool::Response> response) {
+  try {
+    if (request->data) {
+      startStreams();
+      response->success = true;
+      response->message = "streams started";
+    } else {
+      stopStreams();
+      response->success = true;
+      response->message = "streams stopped";
+    }
+  } catch (const ob::Error& e) {
+    response->success = false;
+    response->message = e.getMessage();
+  } catch (const std::exception& e) {
+    response->success = false;
+    response->message = e.what();
+  } catch (...) {
+    response->success = false;
+    response->message = "unknown error";
+  }
+}
+
+void OBCameraNode::getPointCloudDecimationCallback(
+    const std::shared_ptr<GetInt32::Request>& request,
+    std::shared_ptr<GetInt32::Response>& response) {
+  (void)request;
+  try {
+    response->data = point_cloud_decimation_filter_factor_;
+    response->success = true;
+  } catch (const std::exception& e) {
+    response->success = false;
+    response->message = e.what();
+  } catch (...) {
+    response->success = false;
+    response->message = "unknown error";
+  }
+}
+
+void OBCameraNode::setPointCloudDecimationCallback(
+    const std::shared_ptr<SetInt32::Request>& request,
+    std::shared_ptr<SetInt32::Response>& response) {
+  if (!request) {
+    response->success = false;
+    response->message = "Invalid request";
+    return;
+  }
+
+  if (request->data <= 0 || request->data > 8) {
+    response->success = false;
+    response->message = "Decimation factor must be between 1 and 8";
+    RCLCPP_WARN_STREAM(logger_, "Invalid decimation factor: " << request->data);
+    return;
+  }
+
+  try {
+    point_cloud_decimation_filter_factor_ = request->data;
+    RCLCPP_INFO_STREAM(logger_, "Set point_cloud_decimation_filter_factor to "
+                                << point_cloud_decimation_filter_factor_);
+    response->success = true;
+    response->message = "Point cloud decimation factor updated successfully";
+  } catch (const std::exception &e) {
+    response->success = false;
+    response->message = std::string("Failed to set decimation factor: ") + e.what();
+    RCLCPP_ERROR_STREAM(logger_, response->message);
+  }
+}
+
 void OBCameraNode::setStreamsEnableCallback(
     const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
     std::shared_ptr<std_srvs::srv::SetBool::Response> response) {
@@ -954,6 +1041,28 @@ void OBCameraNode::getLdpStatusCallback(const std::shared_ptr<GetBool::Request>&
   }
 }
 
+void OBCameraNode::getLaserStatusCallback(const std::shared_ptr<GetBool::Request>& request,
+                                          std::shared_ptr<GetBool::Response>& response) {
+  (void)request;
+  try {
+    if (device_->isPropertySupported(OB_PROP_LASER_CONTROL_INT, OB_PERMISSION_READ_WRITE)) {
+      response->data = device_->getBoolProperty(OB_PROP_LASER_CONTROL_INT);
+    } else if (device_->isPropertySupported(OB_PROP_LASER_BOOL, OB_PERMISSION_READ_WRITE)) {
+      response->data = device_->getBoolProperty(OB_PROP_LASER_BOOL);
+    }
+    response->success = true;
+  } catch (const ob::Error& e) {
+    response->message = e.getMessage();
+    response->success = false;
+  } catch (const std::exception& e) {
+    response->message = e.what();
+    response->success = false;
+  } catch (...) {
+    response->message = "unknown error";
+    response->success = false;
+  }
+}
+
 void OBCameraNode::setPtpConfigCallback(
     const std::shared_ptr<rmw_request_id_t>& request_header,
     const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
@@ -1044,6 +1153,7 @@ void OBCameraNode::toggleSensorCallback(const std::shared_ptr<SetBool::Request>&
 
 bool OBCameraNode::toggleSensor(const stream_index_pair& stream_index, bool enabled,
                                 std::string& msg) {
+  std::lock_guard<decltype(device_lock_)> lock(device_lock_);
   try {
     pipeline_->stop();
     enable_stream_[stream_index] = enabled;

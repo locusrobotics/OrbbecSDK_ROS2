@@ -414,21 +414,6 @@ void OBCameraNode::setupDevices() {
     TRY_EXECUTE_BLOCK(device_->setMultiDeviceSyncConfig(sync_config));
     sync_config = device_->getMultiDeviceSyncConfig();
     RCLCPP_INFO_STREAM(logger_, "Set sync mode: " << magic_enum::enum_name(sync_config.syncMode));
-    if (sync_mode_ == OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING) {
-      RCLCPP_INFO_STREAM(logger_, "Frames per trigger: " << sync_config.framesPerTrigger);
-      RCLCPP_INFO_STREAM(logger_,
-                         "Software trigger period " << software_trigger_period_.count() << " ms");
-      software_trigger_timer_ = node_->create_wall_timer(software_trigger_period_, [this]() {
-        if (software_trigger_enabled_ || (service_trigger_enabled_ and warmup_trigger_frame_count_ <= warmup_trigger_frame_threshold_)) {
-          TRY_EXECUTE_BLOCK(device_->triggerCapture());
-
-	  warmup_trigger_frame_count_++;
-          if (service_trigger_enabled_  and warmup_trigger_frame_count_ <= warmup_trigger_frame_threshold_) {
-            RCLCPP_INFO_STREAM(logger_, "Warmup trigger: " << warmup_trigger_frame_count_ << "/" << warmup_trigger_frame_threshold_);
-          }
-        }
-      });
-    }
   }
   if (device_->isPropertySupported(OB_DEVICE_PTP_CLOCK_SYNC_ENABLE_BOOL,
                                    OB_PERMISSION_READ_WRITE)) {

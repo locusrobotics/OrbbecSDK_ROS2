@@ -1071,7 +1071,7 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
         TRY_EXECUTE_BLOCK({
           ob_camera_node_->withDeviceLock([&]() {
             device_->updateFirmware(
-                upgrade_firmware_.c_str(),
+                firmware_upgrade_filepath_.c_str(),
                 std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
                           std::placeholders::_2, std::placeholders::_3),
                 false);
@@ -1079,7 +1079,7 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
         });
       } else if (ob_lidar_node_) {
         device_->updateFirmware(
-            upgrade_firmware_.c_str(),
+            firmware_upgrade_filepath_.c_str(),
             std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
                       std::placeholders::_2, std::placeholders::_3),
             false);

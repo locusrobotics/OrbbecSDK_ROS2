@@ -34,6 +34,9 @@
   <depend>libgflags-dev</depend>
   <depend>nlohmann-json-dev</depend>
   <depend>libgoogle-glog-dev</depend>
+  <depend>libssl-dev</depend>
+  <depend>opengl</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

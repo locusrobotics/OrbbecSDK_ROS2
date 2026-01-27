@@ -2,6 +2,28 @@
 Changelog for package orbbec_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Updates the locus branch to v2.6.3 from Orbbec (`#22 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/22>`_)
+  This was tested on a robot with the overnight stress test
+  ---------
+  Co-authored-by: jj <957713278@qq.com>
+  Co-authored-by: datean <datean@orbbec.com>
+  Co-authored-by: yalian <yalian@example.com>
+  Co-authored-by: xiexun <xiexun@orbbec.com>
+  Co-authored-by: obyalian <yalian@orbbec.com>
+  Co-authored-by: slz <shenlanzhou@orbbec.com>
+  Co-authored-by: Christian Rauch <Christian.Rauch@unileoben.ac.at>
+  Co-authored-by: ob-yalian <luotao2025@163.com>
+* [APG-1777] change camera origin (`#21 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/21>`_)
+  Camera origin currently on outside of glass, this moves it in based on
+  the dimensions from orbbec datasheet.
+  Made
+  [this](https://locusrobotics.atlassian.net/jira/software/projects/APG/boards/153?jql=assignee%20%3D%20712020%3A11468fc1-984e-4740-a109-f6f26005009e&selectedIssue=APG-2140)
+  ticket to go through the urdf more thoroughly and add docs on where the
+  values came from. This PR is just to get gazebo working asap
+* Contributors: Sushant Raj, matthewkazan-locus
+
 999.2.0 (2025-12-05)
 --------------------
 

@@ -2,6 +2,23 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Updates the locus branch to v2.6.3 from Orbbec (`#22 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/22>`_)
+  This was tested on a robot with the overnight stress test
+  ---------
+  Co-authored-by: jj <957713278@qq.com>
+  Co-authored-by: datean <datean@orbbec.com>
+  Co-authored-by: yalian <yalian@example.com>
+  Co-authored-by: xiexun <xiexun@orbbec.com>
+  Co-authored-by: obyalian <yalian@orbbec.com>
+  Co-authored-by: slz <shenlanzhou@orbbec.com>
+  Co-authored-by: Christian Rauch <Christian.Rauch@unileoben.ac.at>
+  Co-authored-by: ob-yalian <luotao2025@163.com>
+* APG-2180 Adds functions to recover after a trigger service stalls (`#20 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/20>`_)
+* adding warmup trigger (`#19 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/19>`_)
+* Contributors: Sushant Raj, asainilocus
+
 999.2.0 (2025-12-05)
 --------------------
 * APG-2108 Adds a status topic to the camera driver (`#18 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/18>`_)

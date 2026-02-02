@@ -357,14 +357,14 @@ def generate_launch_description():
                     namespace="",
                     package="rclcpp_components",
                     executable="component_container",
+                    respawn=respawn,
+                    respawn_delay=respawn_delay,
                     composable_node_descriptions=[
                         ComposableNode(
                             package="orbbec_camera",
                             plugin="orbbec_camera::OBCameraNodeDriver",
                             name=camera_name,
                             parameters=params,
-                            respawn=respawn,
-                            respawn_delay=respawn_delay,
                         ),
                     ],
                     output=output,

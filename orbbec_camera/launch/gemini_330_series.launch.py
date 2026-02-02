@@ -70,6 +70,8 @@ def load_parameters(context, args):
 def generate_launch_description():
     args = [
         DeclareLaunchArgument('namespace', default_value=''),
+        DeclareLaunchArgument('respawn', default_value='false'),
+        DeclareLaunchArgument('respawn_delay', default_value='5.0'),
         DeclareLaunchArgument('output', default_value='screen'),
         DeclareLaunchArgument('device_type', default_value='camera'),
         DeclareLaunchArgument('camera_name', default_value='camera'),
@@ -327,6 +329,8 @@ def generate_launch_description():
         namespace = LaunchConfiguration("namespace").perform(context)
         output = LaunchConfiguration("output").perform(context)
         camera_name = LaunchConfiguration("camera_name").perform(context)
+        respawn = LaunchConfiguration("respawn").perform(context) == 'true'
+        respawn_delay = float(LaunchConfiguration("respawn_delay").perform(context))
         ros_distro = os.environ.get("ROS_DISTRO", "humble")
 
         if ros_distro == "foxy":
@@ -338,6 +342,8 @@ def generate_launch_description():
                     namespace=namespace,
                     parameters=params,
                     output=output,
+                    respawn=respawn,
+                    respawn_delay=respawn_delay,
                 )
             ]
         else:
@@ -357,6 +363,8 @@ def generate_launch_description():
                             plugin="orbbec_camera::OBCameraNodeDriver",
                             name=camera_name,
                             parameters=params,
+                            respawn=respawn,
+                            respawn_delay=respawn_delay,
                         ),
                     ],
                     output=output,

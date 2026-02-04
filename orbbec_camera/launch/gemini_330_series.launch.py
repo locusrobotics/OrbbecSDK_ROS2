@@ -329,7 +329,9 @@ def generate_launch_description():
         namespace = LaunchConfiguration("namespace").perform(context)
         output = LaunchConfiguration("output").perform(context)
         camera_name = LaunchConfiguration("camera_name").perform(context)
+        print(f"Launch configuration test: {LaunchConfiguration("respawn").perform(context)}")
         respawn = LaunchConfiguration("respawn").perform(context) == 'true'
+        print(f"Respawn is set to: {respawn}")
         respawn_delay = float(LaunchConfiguration("respawn_delay").perform(context))
         ros_distro = os.environ.get("ROS_DISTRO", "humble")
 

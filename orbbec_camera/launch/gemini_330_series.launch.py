@@ -366,7 +366,8 @@ def generate_launch_description():
                     executable="component_container",
                     respawn=respawn,
                     respawn_delay=respawn_delay,
-                    composable_node_descriptions=[camera_component],
+                    # Making this empty so that the reload on restart doesn't load the component twice
+                    composable_node_descriptions=[],
                     output=output,
                 )
             

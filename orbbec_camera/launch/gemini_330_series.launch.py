@@ -1,7 +1,7 @@
 import os
 import yaml
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction, RegisterEventHandler, TimerAction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import PushRosNamespace, ComposableNodeContainer, Node, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
@@ -379,9 +379,14 @@ def generate_launch_description():
                 OnProcessStart(
                     target_action=container,
                     on_start=[
-                        LoadComposableNodes(
-                            composable_node_descriptions=[camera_component],
-                            target_container=camera_name + "_container",
+                        TimerAction(
+                            period=respawn_delay, # Delay to ensure container is ready
+                            actions=[
+                                LoadComposableNodes(
+                                    composable_node_descriptions=[camera_component],
+                                    target_container=camera_name + "_container",
+                                )
+                            ],
                         )
                     ],
                 )

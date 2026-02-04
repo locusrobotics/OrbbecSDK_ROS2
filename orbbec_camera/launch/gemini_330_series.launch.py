@@ -384,7 +384,7 @@ def generate_launch_description():
                             actions=[
                                 LoadComposableNodes(
                                     composable_node_descriptions=[camera_component],
-                                    target_container=camera_name + "_container",
+                                    target_container=container,
                                 )
                             ],
                         )

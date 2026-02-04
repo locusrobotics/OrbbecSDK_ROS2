@@ -1,10 +1,11 @@
 import os
 import yaml
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction, RegisterEventHandler
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import PushRosNamespace, ComposableNodeContainer, Node
+from launch_ros.actions import PushRosNamespace, ComposableNodeContainer, Node, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
+from launch.event_handlers import OnProcessStart
 
 
 def load_yaml(file_path):
@@ -329,9 +330,7 @@ def generate_launch_description():
         namespace = LaunchConfiguration("namespace").perform(context)
         output = LaunchConfiguration("output").perform(context)
         camera_name = LaunchConfiguration("camera_name").perform(context)
-        print(f"Launch configuration test: {LaunchConfiguration("respawn").perform(context)}")
         respawn = LaunchConfiguration("respawn").perform(context) == 'true'
-        print(f"Respawn is set to: {respawn}")
         respawn_delay = float(LaunchConfiguration("respawn_delay").perform(context))
         ros_distro = os.environ.get("ROS_DISTRO", "humble")
 
@@ -353,24 +352,41 @@ def generate_launch_description():
             if namespace:
                 actions.append(PushRosNamespace(namespace))
 
-            actions.append(
-                ComposableNodeContainer(
+            camera_component = ComposableNode(
+                package="orbbec_camera",
+                plugin="orbbec_camera::OBCameraNodeDriver",
+                name=camera_name,
+                parameters=params,
+            )
+            
+            container = ComposableNodeContainer(
                     name=camera_name + "_container",
                     namespace="",
                     package="rclcpp_components",
                     executable="component_container",
                     respawn=respawn,
                     respawn_delay=respawn_delay,
-                    composable_node_descriptions=[
-                        ComposableNode(
-                            package="orbbec_camera",
-                            plugin="orbbec_camera::OBCameraNodeDriver",
-                            name=camera_name,
-                            parameters=params,
-                        ),
-                    ],
+                    composable_node_descriptions=[camera_component],
                     output=output,
                 )
+            
+            actions.append(
+                container
+            )
+
+            reload_on_restart = RegisterEventHandler(
+                OnProcessStart(
+                    target_action=container,
+                    on_start=[
+                        LoadComposableNodes(
+                            composable_node_descriptions=[camera_component],
+                            target_container=camera_name + "_container",
+                        )
+                    ],
+                )
+            )
+            actions.append(
+                reload_on_restart
             )
 
             return [GroupAction(actions)]

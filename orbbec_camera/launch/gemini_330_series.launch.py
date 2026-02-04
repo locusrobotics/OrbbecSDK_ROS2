@@ -366,9 +366,9 @@ def generate_launch_description():
                     executable="component_container",
                     respawn=respawn,
                     respawn_delay=respawn_delay,
-                    # Making this empty so that the reload on restart doesn't load the component twice
-                    composable_node_descriptions=[],
+                    composable_node_descriptions=[camera_component],
                     output=output,
+                    arguments=['--ros-args', '--log-level', 'INFO'],
                 )
             
             actions.append(
@@ -380,7 +380,7 @@ def generate_launch_description():
                     target_action=container,
                     on_start=[
                         TimerAction(
-                            period=respawn_delay, # Delay to ensure container is ready
+                            period=1.0,
                             actions=[
                                 LoadComposableNodes(
                                     composable_node_descriptions=[camera_component],

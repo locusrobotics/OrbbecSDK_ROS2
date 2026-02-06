@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.4.0 (2026-02-06)
+--------------------
 * APG-2274 Sets Up Pick Cameras to respawn on crashes (`#23 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/23>`_)
 * Contributors: Sushant Raj
 

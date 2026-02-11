@@ -6,17 +6,21 @@ namespace orbbec_camera {
 TriggerFailureMonitor::TriggerFailureMonitor(rclcpp::Node* node,
                                              const rclcpp::Logger& logger,
                                              int failures_before_recovery,
-                                             double timer_period_seconds)
+                                             double timer_period_seconds,
+                                            double period_between_restart_seconds)
     : node_(node), 
       logger_(logger), 
       failures_before_recovery_(failures_before_recovery),
-      timer_period_seconds_(timer_period_seconds) {
+      timer_period_seconds_(timer_period_seconds),
+      period_between_restart_seconds_(period_between_restart_seconds) {
 
   RCLCPP_INFO_STREAM(logger_, "Setting up trigger failure monitor with period "
                                   << timer_period_seconds_ << " seconds, "
                                   << "failures_before_recovery: "
-                                  << failures_before_recovery_);
-  
+                                  << failures_before_recovery_ 
+                                  << ", period_between_restart_seconds: "
+                                  << period_between_restart_seconds_);
+
   timer_ = node_->create_wall_timer(
       std::chrono::duration<double>(timer_period_seconds_),
       std::bind(&TriggerFailureMonitor::timerCallback, this));
@@ -87,7 +91,7 @@ bool TriggerFailureMonitor::cycleStreams() {
     return false;
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(250));
+  std::this_thread::sleep_for(std::chrono::duration<double>(period_between_restart_seconds_));
 
   // Reactivate streams
   if (!activate_callback_) {

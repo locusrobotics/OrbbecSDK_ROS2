@@ -232,47 +232,50 @@ void OBCameraNode::setupCameraCtrlServices() {
         sendSoftwareTriggerCallback(request, response);
       });
   write_customerdata_srv_ = node_->create_service<SetString>(
-      "write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
+      camera_name_ + "/""write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
                                     std::shared_ptr<SetString::Response> response) {
         writeCustomerDataCallback(request, response);
       });
   read_customerdata_srv_ = node_->create_service<GetString>(
-      "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
+      camera_name_ + "/" + "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
                                    std::shared_ptr<GetString::Response> response) {
         readCustomerDataCallback(request, response);
       });
   set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
-      "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
+      camera_name_ + "/" + "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
                                       std::shared_ptr<SetUserCalibParams::Response> response) {
         setUserCalibParamsCallback(request, response);
       });
   get_user_calib_params_srv_ = node_->create_service<GetUserCalibParams>(
-      "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
+      camera_name_ + "/" + "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
                                       std::shared_ptr<GetUserCalibParams::Response> response) {
         getUserCalibParamsCallback(request, response);
       });
   set_streams_enable_srv_ = node_->create_service<SetBool>(
-      "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
+      camera_name_ + "/" + "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
                                    std::shared_ptr<SetBool::Response> response) {
         setStreamsEnableCallback(request, response);
       });
   get_streams_enable_srv_ = node_->create_service<GetBool>(
-      "get_streams_enable", [this](const std::shared_ptr<GetBool::Request> request,
+      camera_name_ + "/" + "get_streams_enable", [this](const std::shared_ptr<GetBool::Request> request,
                                    std::shared_ptr<GetBool::Response> response) {
         getStreamsEnableCallback(request, response);
       });
   set_point_cloud_decimation_srv_ = node_->create_service<SetInt32>(
-      "set_point_cloud_decimation", [this](const std::shared_ptr<SetInt32::Request> request,
+      camera_name_ + "/" + "set_point_cloud_decimation", [this](const std::shared_ptr<SetInt32::Request> request,
                                             std::shared_ptr<SetInt32::Response> response) {
         setPointCloudDecimationCallback(request, response);
       });
   get_point_cloud_decimation_srv_ = node_->create_service<GetInt32>(
-      "get_point_cloud_decimation", [this](const std::shared_ptr<GetInt32::Request> request,
+      camera_name_ + "/" + "get_point_cloud_decimation", [this](const std::shared_ptr<GetInt32::Request> request,
                                             std::shared_ptr<GetInt32::Response> response) {
         getPointCloudDecimationCallback(request, response);
       });
   change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
       camera_name_ + "/" + "change_state", std::bind(&OBCameraNode::handleChangeStateRequest, this,
+                              std::placeholders::_1, std::placeholders::_2));
+  get_state_srv_ = node_->create_service<lifecycle_msgs::srv::GetState>(
+      camera_name_ + "/" + "get_state", std::bind(&OBCameraNode::handleGetStateRequest, this,
                               std::placeholders::_1, std::placeholders::_2));
 
 }
@@ -1274,6 +1277,16 @@ void OBCameraNode::resetCaptureServiceVariables() {
   service_capture_started_ = false;
   number_of_rgb_frames_captured_ = 0;
   number_of_depth_frames_captured_ = 0;
+}
+
+void OBCameraNode::handleGetStateRequest(
+    const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> request,
+        std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response) {
+  (void)request;
+  lifecycle_msgs::msg::State state;
+  state.id = current_state_.id;
+  state.label = current_state_.label;
+  response->current_state = state;
 }
 
 void OBCameraNode::handleChangeStateRequest(

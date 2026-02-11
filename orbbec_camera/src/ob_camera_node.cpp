@@ -2215,15 +2215,17 @@ void OBCameraNode::setupTriggerFailureMonitor() {
   bool enabled;
   int failures_before_recovery;
   double timer_period_seconds;
+  double period_between_restart_seconds;
   setAndGetNodeParameter<bool>(enabled, "enable_trigger_failure_monitor", service_trigger_enabled_);
   setAndGetNodeParameter<int>(failures_before_recovery, "trigger_failures_before_recovery", 2);
   setAndGetNodeParameter<double>(timer_period_seconds, "trigger_failure_monitor_timer_period", 1.0);
+  setAndGetNodeParameter<double>(period_between_restart_seconds, "trigger_failure_period_between_restart", 0.25);
   if (!enabled) {
     RCLCPP_INFO_STREAM(logger_, "Trigger failure monitor is disabled");
     return;
   }
   trigger_failure_monitor_ = std::make_unique<TriggerFailureMonitor>(
-      node_, logger_, failures_before_recovery, timer_period_seconds);
+      node_, logger_, failures_before_recovery, timer_period_seconds, period_between_restart_seconds);
   // Set up callbacks for stream control and pipeline status
   trigger_failure_monitor_->setActivateCallback(
       std::bind(&OBCameraNode::activateStreams, this));
@@ -2508,6 +2510,7 @@ void OBCameraNode::setupPublishers() {
 void OBCameraNode::set_state(uint8_t state) {
   lifecycle_msgs::msg::State msg;
   msg.id = state;
+  lifecycle_state_ = state;
   lifecycle_state_pub_->publish(msg);
 }
 

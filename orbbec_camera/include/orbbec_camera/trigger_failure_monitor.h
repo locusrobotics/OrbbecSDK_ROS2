@@ -29,11 +29,13 @@ class TriggerFailureMonitor {
    * @param logger Logger for diagnostic messages
    * @param failures_before_recovery Number of failures before recovery
    * @param timer_period_seconds Timer period in seconds
+   * @param period_between_restart_seconds Time to wait between deactivating and reactivating streams during recovery
    */
   TriggerFailureMonitor(rclcpp::Node* node,
                         const rclcpp::Logger& logger,
                         int failures_before_recovery,
-                        double timer_period_seconds);
+                        double timer_period_seconds,
+                        double period_between_restart_seconds);
 
   /**
    * @brief Destructor - cleans up timer
@@ -107,6 +109,7 @@ class TriggerFailureMonitor {
   int failures_before_recovery_{2};
   double timer_period_seconds_{1.0}; 
   bool recovery_in_progress_{false};
+  double period_between_restart_seconds_{0.25};
 };
 
 }  // namespace orbbec_camera

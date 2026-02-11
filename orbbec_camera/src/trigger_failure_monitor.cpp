@@ -7,12 +7,14 @@ TriggerFailureMonitor::TriggerFailureMonitor(rclcpp::Node* node,
                                              const rclcpp::Logger& logger,
                                              int failures_before_recovery,
                                              double timer_period_seconds,
-                                            double period_between_restart_seconds)
+                                             double period_between_restart_seconds,
+                                             int warmup_triggers_after_recovery)
     : node_(node), 
       logger_(logger), 
       failures_before_recovery_(failures_before_recovery),
       timer_period_seconds_(timer_period_seconds),
-      period_between_restart_seconds_(period_between_restart_seconds) {
+      period_between_restart_seconds_(period_between_restart_seconds),
+      warmup_triggers_after_recovery_(warmup_triggers_after_recovery) {
 
   RCLCPP_INFO_STREAM(logger_, "Setting up trigger failure monitor with period "
                                   << timer_period_seconds_ << " seconds, "
@@ -40,6 +42,10 @@ void TriggerFailureMonitor::setActivateCallback(StreamControlCallback callback) 
 
 void TriggerFailureMonitor::setPipelineStatusCallback(PipelineStatusCallback callback) {
   pipeline_status_callback_ = callback;
+}
+
+void TriggerFailureMonitor::setTriggerCallback(TriggerCallback callback) {
+  trigger_callback_ = callback;
 }
 
 void TriggerFailureMonitor::recordFailure() {
@@ -104,6 +110,11 @@ bool TriggerFailureMonitor::cycleStreams() {
     RCLCPP_ERROR(logger_, "Failed to reactivate streams during trigger failure recovery");
     recovery_in_progress_ = false;
     return false;
+  }
+  for (int i = 0; i < warmup_triggers_after_recovery_; ++i) {
+    if (trigger_callback_) {
+      trigger_callback_();
+    }
   }
 
   recovery_in_progress_ = false;

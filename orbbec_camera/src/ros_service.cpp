@@ -1284,8 +1284,7 @@ void OBCameraNode::handleGetStateRequest(
         std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response) {
   (void)request;
   lifecycle_msgs::msg::State state;
-  state.id = current_state_.id;
-  state.label = current_state_.label;
+  state.id = lifecycle_state_;
   response->current_state = state;
 }
 

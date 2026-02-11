@@ -366,7 +366,7 @@ def generate_launch_description():
                     executable="component_container",
                     respawn=respawn,
                     respawn_delay=respawn_delay,
-                    composable_node_descriptions=[camera_component],
+                    composable_node_descriptions=[],
                     output=output,
                     arguments=['--ros-args', '--log-level', 'INFO'],
                 )
@@ -382,6 +382,7 @@ def generate_launch_description():
                         TimerAction(
                             period=1.0,
                             actions=[
+                                PushRosNamespace(namespace),
                                 LoadComposableNodes(
                                     composable_node_descriptions=[camera_component],
                                     target_container=container,

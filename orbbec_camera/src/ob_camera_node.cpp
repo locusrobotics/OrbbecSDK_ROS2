@@ -2236,7 +2236,7 @@ void OBCameraNode::setupTriggerFailureMonitor() {
       std::bind(&OBCameraNode::deactivateStreams, this));
   trigger_failure_monitor_->setPipelineStatusCallback(
       [this]() { return pipeline_started_.load(); });
-  trigger_failure_monitor->setTriggerCallback(
+  trigger_failure_monitor_->setTriggerCallback(
       [this]() {
         TRY_EXECUTE_BLOCK(device_->triggerCapture());
       });

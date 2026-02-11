@@ -415,6 +415,9 @@ class OBCameraNode {
   void handleChangeStateRequest(
       const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
       std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);
+  
+  void handleGetStateRequest(const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> request,
+                             std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response);
 
   bool activateStreams();
 

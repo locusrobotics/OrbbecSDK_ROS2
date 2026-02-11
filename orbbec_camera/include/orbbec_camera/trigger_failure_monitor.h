@@ -118,7 +118,8 @@ class TriggerFailureMonitor {
   
   StreamControlCallback deactivate_callback_;       
   StreamControlCallback activate_callback_;         
-  PipelineStatusCallback pipeline_status_callback_; 
+  PipelineStatusCallback pipeline_status_callback_;
+  TriggerCallback trigger_callback_;
   int failures_before_recovery_{2};
   double timer_period_seconds_{1.0}; 
   bool recovery_in_progress_{false};

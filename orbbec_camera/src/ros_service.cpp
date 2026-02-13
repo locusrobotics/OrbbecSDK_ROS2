@@ -1280,9 +1280,8 @@ void OBCameraNode::resetCaptureServiceVariables() {
 }
 
 void OBCameraNode::handleGetStateRequest(
-    const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> request,
+    const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> /* request */,
         std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response) {
-  (void)request;
   lifecycle_msgs::msg::State state;
   state.id = lifecycle_state_;
   response->current_state = state;

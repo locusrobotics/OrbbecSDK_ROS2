@@ -38,6 +38,7 @@
 #include <std_srvs/srv/empty.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <lifecycle_msgs/srv/change_state.hpp>
+#include <lifecycle_msgs/srv/get_state.hpp>
 #include <lifecycle_msgs/msg/state.hpp>
 
 #include <sensor_msgs/msg/camera_info.hpp>
@@ -414,6 +415,9 @@ class OBCameraNode {
   void handleChangeStateRequest(
       const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
       std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);
+  
+  void handleGetStateRequest(const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> request,
+                             std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response);
 
   bool activateStreams();
 
@@ -598,6 +602,7 @@ class OBCameraNode {
   rclcpp::Service<SetFilter>::SharedPtr set_filter_srv_;
   rclcpp::Service<CameraTrigger>::SharedPtr capture_camera_images_srv_;
   rclcpp::Service<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_srv_;
+  rclcpp::Service<lifecycle_msgs::srv::GetState>::SharedPtr get_state_srv_;
   rclcpp::Service<orbbec_camera_msgs::srv::GetBool>::SharedPtr get_streams_enable_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_point_cloud_decimation_srv_;
   rclcpp::Service<GetInt32>::SharedPtr get_point_cloud_decimation_srv_;
@@ -884,6 +889,7 @@ class OBCameraNode {
 
   std::string intra_camera_sync_reference_ = "";
   rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
+  uint8_t lifecycle_state_{lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN};
 
   // Trigger failure monitor for automatic recovery
   std::unique_ptr<TriggerFailureMonitor> trigger_failure_monitor_;

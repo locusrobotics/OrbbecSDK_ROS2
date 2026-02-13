@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.5.0 (2026-02-13)
+--------------------
 * APG-2306 Adds warmup triggers to the trigger failure recovery, adds a get life cycle state service, and small bug fixes (`#24 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/24>`_)
 * Contributors: Sushant Raj
 

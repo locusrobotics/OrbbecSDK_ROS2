@@ -197,11 +197,14 @@ void OBCameraNodeDriver::init() {
   auto log_level_str = declare_parameter<std::string>("log_level", "none");
   auto log_level = obLogSeverityFromString(log_level_str);
   auto log_file_name = declare_parameter<std::string>("log_file_name", "");
-  std::string pwd_dir = std::getenv("PWD") ? std::getenv("PWD") : std::getenv("HOME");
-  std::string log_path = pwd_dir + "/Log/" + g_camera_name;
+  auto log_file_path = declare_parameter<std::string>("log_file_path", "");
+  if (!log_file_path) {
+    std::string pwd_dir = std::getenv("PWD") ? std::getenv("PWD") : std::getenv("HOME");
+    log_file_path = pwd_dir + "/Log/" + g_camera_name;
+  }
   // Set logger to console
   ob::Context::setLoggerToConsole(log_level);
-  ob::Context::setLoggerToFile(log_level, log_path.c_str());
+  ob::Context::setLoggerToFile(log_level, log_file_path.c_str());
   // Set custom log file name if specified
   if (!log_file_name.empty()) {
     try {

@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.6.0 (2026-03-05)
+--------------------
 * Add variable for SDK log path (`#25 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/25>`_)
 * Contributors: Sushant Raj
 

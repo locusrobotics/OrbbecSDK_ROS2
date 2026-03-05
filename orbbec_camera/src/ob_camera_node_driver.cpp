@@ -198,7 +198,7 @@ void OBCameraNodeDriver::init() {
   auto log_level = obLogSeverityFromString(log_level_str);
   auto log_file_name = declare_parameter<std::string>("log_file_name", "");
   auto log_file_path = declare_parameter<std::string>("log_file_path", "");
-  if (!log_file_path) {
+  if (log_file_name.empty()) {
     std::string pwd_dir = std::getenv("PWD") ? std::getenv("PWD") : std::getenv("HOME");
     log_file_path = pwd_dir + "/Log/" + g_camera_name;
   }

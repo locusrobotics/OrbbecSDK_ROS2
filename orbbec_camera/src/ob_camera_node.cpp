@@ -1921,6 +1921,7 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
   setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
   setAndGetNodeParameter<bool>(service_trigger_enabled_, "service_trigger_enabled", false);
+  setAndGetNodeParameter<double>(streaming_framerate_hz_, "streaming_framerate_hz", 6.0);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {

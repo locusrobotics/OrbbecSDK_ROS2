@@ -3,7 +3,6 @@ on:
   workflow_dispatch:
   pull_request: &event
     branches:
-      - v2-main
       - locus
     paths:
       - '**.hpp'
@@ -26,4 +25,3 @@ jobs:
     with:
       ros_distro: jazzy
       ros_repo: main
-      ref_for_scheduled_build: v2-main

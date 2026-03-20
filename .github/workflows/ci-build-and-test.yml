@@ -1,0 +1,34 @@
+name: CI Build and Test
+on:
+  workflow_dispatch:
+  pull_request: &event
+    branches:
+      - v2-main
+      - locus
+    paths:
+      - '**.hpp'
+      - '**.h'
+      - '**.cpp'
+      - '**.py'
+      - '**.yaml'
+      - '.github/workflows/ci-build-and-test.yml'
+      - '**/package.xml'
+      - '**/CMakeLists.txt'
+  push: *event
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads') }}
+
+jobs:
+  binary:
+    uses: ros-controls/ros2_control_ci/.github/workflows/reusable-industrial-ci-with-cache.yml@master
+    strategy:
+      fail-fast: false
+      matrix:
+        ROS_DISTRO: [humble, jazzy]
+        ROS_REPO: [main, testing]
+    with:
+      ros_distro: ${{ matrix.ROS_DISTRO }}
+      ros_repo: ${{ matrix.ROS_REPO }}
+      ref_for_scheduled_build: v2-main

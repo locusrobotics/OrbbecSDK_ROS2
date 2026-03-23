@@ -1,0 +1,39 @@
+name: CI Build and Test
+on:
+  workflow_dispatch:
+  pull_request: &event
+    branches:
+      - locus
+    paths:
+      - '**.hpp'
+      - '**.h'
+      - '**.cpp'
+      - '**.py'
+      - '**.yaml'
+      - '.github/workflows/ci-build-and-test.yml'
+      - '**/package.xml'
+      - '**/CMakeLists.txt'
+  push: *event
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads') }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-jazzy-${{ github.sha }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-jazzy-${{ github.sha }}
+            ccache-jazzy-
+      - uses: ros-industrial/industrial_ci@master
+        env:
+          ROS_DISTRO: jazzy
+          ROS_REPO: main

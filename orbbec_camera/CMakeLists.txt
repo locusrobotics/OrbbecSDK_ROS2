@@ -259,6 +259,9 @@ install(TARGETS list_devices_node list_depth_work_mode_node list_camera_profile_
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     ament_lint_auto_find_test_dependencies()
+    find_package(ament_cmake_gmock REQUIRED)
+    ament_add_gmock(test_streaming_service test/test_streaming_service.cpp)
+    ament_target_dependencies(test_streaming_service rclcpp std_srvs)
 endif()
 
 ament_export_include_directories(include)

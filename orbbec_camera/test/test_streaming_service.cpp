@@ -1,296 +1,217 @@
 /*******************************************************************************
- * Tests for the on-demand streaming service added in this PR.
+ * Tests for the on-demand streaming service.
  *
- * OBCameraNode cannot be instantiated without real hardware, so these tests
- * exercise the streaming state-machine logic through a minimal test fixture
- * that mirrors the member variables and methods involved in streaming.
+ * Uses link-time C API stubs (ob_sdk_stubs.cpp) to override the real Orbbec SDK,
+ * allowing us to instantiate a real OBCameraNode without hardware.
  ******************************************************************************/
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/set_bool.hpp>
-#include <atomic>
-#include <chrono>
+
+#include "orbbec_camera/ob_camera_node.h"
 
 using SetBool = std_srvs::srv::SetBool;
 using ::testing::Eq;
-using ::testing::Ge;
 using ::testing::HasSubstr;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 
-/// Mock for the device trigger interface – replaces device_->triggerCapture().
-class MockDevice {
- public:
-  MOCK_METHOD(void, triggerCapture, ());
-};
-
-/// Minimal fixture that replicates the streaming state-machine from OBCameraNode
-/// so we can unit-test the logic without needing a real Orbbec device.
-class StreamingLogicTest : public ::testing::Test {
+class StreamingServiceTest : public ::testing::Test {
  protected:
   void SetUp() override {
     rclcpp::init(0, nullptr);
-    node_ = std::make_shared<rclcpp::Node>("test_streaming_node");
-    mock_device_ = std::make_shared<MockDevice>();
+
+    rclcpp::NodeOptions opts;
+    // Declare parameters that OBCameraNode::getParameters() expects
+    opts.append_parameter_override("service_trigger_enabled", true);
+    opts.append_parameter_override("streaming_framerate_hz", 10.0);
+    // Disable everything we don't need to minimize construction side effects
+    opts.append_parameter_override("enable_color", false);
+    opts.append_parameter_override("enable_depth", false);
+    opts.append_parameter_override("enable_ir", false);
+    opts.append_parameter_override("enable_left_ir", false);
+    opts.append_parameter_override("enable_right_ir", false);
+    opts.append_parameter_override("enable_gyro", false);
+    opts.append_parameter_override("enable_accel", false);
+    opts.append_parameter_override("enable_d2c_viewer", false);
+    opts.append_parameter_override("enable_colored_point_cloud", false);
+    opts.append_parameter_override("enable_point_cloud", false);
+    opts.append_parameter_override("enable_soft_filter", false);
+    opts.append_parameter_override("enable_frame_sync", false);
+    opts.append_parameter_override("publish_tf", false);
+    opts.append_parameter_override("enable_sync_output_accel_gyro", false);
+
+    node_ = std::make_shared<rclcpp::Node>("test_camera_node", opts);
+
+    auto device = std::make_shared<ob::Device>(nullptr);
+    auto parameters = std::make_shared<orbbec_camera::Parameters>(node_.get());
+
+    camera_node_ = std::make_unique<orbbec_camera::OBCameraNode>(
+        node_.get(), device, parameters, /*use_intra_process=*/false);
   }
 
-  void TearDown() override { rclcpp::shutdown(); }
-
-  // ---- mirrors of OBCameraNode members ----
-  bool service_trigger_enabled_ = false;
-  std::atomic_bool streaming_enabled_{false};
-  double streaming_framerate_hz_ = 6.0;
-  rclcpp::TimerBase::SharedPtr streaming_timer_;
-
-  // ---- mirrors of OBCameraNode methods ----
-  void setStreamingCallback(const std::shared_ptr<SetBool::Request>& request,
-                            std::shared_ptr<SetBool::Response>& response) {
-    if (!service_trigger_enabled_) {
-      response->success = false;
-      response->message = "Streaming requires service_trigger_enabled to be true";
-      return;
-    }
-    if (request->data) {
-      startStreaming();
-    } else {
-      stopStreaming();
-    }
-    response->success = true;
-    response->message = streaming_enabled_ ? "Streaming started" : "Streaming stopped";
+  void TearDown() override {
+    camera_node_.reset();
+    node_.reset();
+    rclcpp::shutdown();
   }
 
-  void startStreaming() {
-    if (streaming_enabled_) {
-      return;
-    }
-    streaming_enabled_ = true;
-    streaming_timer_->reset();
-  }
-
-  void stopStreaming() {
-    if (!streaming_enabled_) {
-      return;
-    }
-    streaming_enabled_ = false;
-    streaming_timer_->cancel();
-  }
-
-  void streamingTimerCallback() {
-    if (!streaming_enabled_ || !service_trigger_enabled_) {
-      return;
-    }
-    mock_device_->triggerCapture();
-  }
-
-  void createTimer() {
-    streaming_timer_ = node_->create_wall_timer(
-        std::chrono::milliseconds(static_cast<int>(1000.0 / streaming_framerate_hz_)),
-        [this]() { streamingTimerCallback(); });
-    streaming_timer_->cancel();
-  }
-
-  std::shared_ptr<SetBool::Response> callService(bool data) {
+  std::shared_ptr<SetBool::Response> callSetStreaming(bool data) {
+    auto client = node_->create_client<SetBool>("camera/set_streaming");
     auto request = std::make_shared<SetBool::Request>();
     request->data = data;
-    auto response = std::make_shared<SetBool::Response>();
-    setStreamingCallback(request, response);
-    return response;
+
+    auto future = client->async_send_request(request);
+    // Spin until the service responds
+    auto start = std::chrono::steady_clock::now();
+    while (future.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) {
+      rclcpp::spin_some(node_);
+      if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5)) {
+        ADD_FAILURE() << "Service call timed out";
+        return nullptr;
+      }
+    }
+    return future.get();
   }
 
   rclcpp::Node::SharedPtr node_;
-  std::shared_ptr<MockDevice> mock_device_;
+  std::unique_ptr<orbbec_camera::OBCameraNode> camera_node_;
 };
 
-// ---------- Timer period calculation ----------
+// --- Service accepts start when service_trigger_enabled is true ---
 
-TEST_F(StreamingLogicTest, DefaultFramerateYields166msPeriod) {
-  EXPECT_THAT(static_cast<int>(1000.0 / streaming_framerate_hz_), Eq(166));
-}
-
-TEST_F(StreamingLogicTest, ThirtyHzYields33msPeriod) {
-  streaming_framerate_hz_ = 30.0;
-  EXPECT_THAT(static_cast<int>(1000.0 / streaming_framerate_hz_), Eq(33));
-}
-
-TEST_F(StreamingLogicTest, OneHzYields1000msPeriod) {
-  streaming_framerate_hz_ = 1.0;
-  EXPECT_THAT(static_cast<int>(1000.0 / streaming_framerate_hz_), Eq(1000));
-}
-
-// ---------- Service rejects when service_trigger_enabled is false ----------
-
-TEST_F(StreamingLogicTest, RejectsStartWhenServiceTriggerDisabled) {
-  createTimer();
-  service_trigger_enabled_ = false;
-
-  auto response = callService(true);
-
-  EXPECT_THAT(response->success, IsFalse());
-  EXPECT_THAT(streaming_enabled_.load(), IsFalse());
-  EXPECT_THAT(response->message, HasSubstr("service_trigger_enabled"));
-}
-
-TEST_F(StreamingLogicTest, RejectsStopWhenServiceTriggerDisabled) {
-  createTimer();
-  service_trigger_enabled_ = false;
-
-  auto response = callService(false);
-
-  EXPECT_THAT(response->success, IsFalse());
-  EXPECT_THAT(response->message, HasSubstr("service_trigger_enabled"));
-}
-
-// ---------- Service accepts when service_trigger_enabled is true ----------
-
-TEST_F(StreamingLogicTest, AcceptsStartWhenServiceTriggerEnabled) {
-  createTimer();
-  service_trigger_enabled_ = true;
-
-  auto response = callService(true);
-
+TEST_F(StreamingServiceTest, StartStreamingSucceeds) {
+  auto response = callSetStreaming(true);
+  ASSERT_NE(response, nullptr);
   EXPECT_THAT(response->success, IsTrue());
-  EXPECT_THAT(streaming_enabled_.load(), IsTrue());
   EXPECT_THAT(response->message, Eq("Streaming started"));
 }
 
-TEST_F(StreamingLogicTest, AcceptsStopWhenServiceTriggerEnabled) {
-  createTimer();
-  service_trigger_enabled_ = true;
+// --- Service accepts stop ---
 
-  callService(true);
-  auto response = callService(false);
-
+TEST_F(StreamingServiceTest, StopStreamingSucceeds) {
+  callSetStreaming(true);
+  auto response = callSetStreaming(false);
+  ASSERT_NE(response, nullptr);
   EXPECT_THAT(response->success, IsTrue());
-  EXPECT_THAT(streaming_enabled_.load(), IsFalse());
   EXPECT_THAT(response->message, Eq("Streaming stopped"));
 }
 
-// ---------- Idempotency ----------
+// --- Stop when already stopped ---
 
-TEST_F(StreamingLogicTest, StartIsIdempotent) {
-  createTimer();
-  service_trigger_enabled_ = true;
-
-  startStreaming();
-  EXPECT_THAT(streaming_enabled_.load(), IsTrue());
-
-  startStreaming();
-  EXPECT_THAT(streaming_enabled_.load(), IsTrue());
+TEST_F(StreamingServiceTest, StopWhenAlreadyStoppedSucceeds) {
+  auto response = callSetStreaming(false);
+  ASSERT_NE(response, nullptr);
+  EXPECT_THAT(response->success, IsTrue());
+  EXPECT_THAT(response->message, Eq("Streaming stopped"));
 }
 
-TEST_F(StreamingLogicTest, StopIsIdempotentWhenAlreadyStopped) {
-  createTimer();
+// --- Start is idempotent ---
 
-  stopStreaming();
-  EXPECT_THAT(streaming_enabled_.load(), IsFalse());
-}
-
-TEST_F(StreamingLogicTest, StopIsIdempotentAfterStartStop) {
-  createTimer();
-  service_trigger_enabled_ = true;
-
-  startStreaming();
-  stopStreaming();
-  stopStreaming();
-  EXPECT_THAT(streaming_enabled_.load(), IsFalse());
-}
-
-// ---------- Timer callback guards ----------
-
-TEST_F(StreamingLogicTest, TimerCallbackDoesNotTriggerWhenStreamingDisabled) {
-  createTimer();
-  service_trigger_enabled_ = true;
-  streaming_enabled_ = false;
-
-  EXPECT_CALL(*mock_device_, triggerCapture()).Times(0);
-  streamingTimerCallback();
-}
-
-TEST_F(StreamingLogicTest, TimerCallbackDoesNotTriggerWhenServiceTriggerDisabled) {
-  createTimer();
-  service_trigger_enabled_ = false;
-  streaming_enabled_ = true;
-
-  EXPECT_CALL(*mock_device_, triggerCapture()).Times(0);
-  streamingTimerCallback();
-}
-
-TEST_F(StreamingLogicTest, TimerCallbackTriggersWhenBothEnabled) {
-  createTimer();
-  service_trigger_enabled_ = true;
-  streaming_enabled_ = true;
-
-  EXPECT_CALL(*mock_device_, triggerCapture()).Times(1);
-  streamingTimerCallback();
-}
-
-TEST_F(StreamingLogicTest, TimerCallbackTriggersMultipleTimes) {
-  createTimer();
-  service_trigger_enabled_ = true;
-  streaming_enabled_ = true;
-
-  EXPECT_CALL(*mock_device_, triggerCapture()).Times(3);
-  streamingTimerCallback();
-  streamingTimerCallback();
-  streamingTimerCallback();
-}
-
-// ---------- Timer integration with ROS executor ----------
-
-TEST_F(StreamingLogicTest, TimerFiresThroughExecutor) {
-  service_trigger_enabled_ = true;
-  streaming_framerate_hz_ = 100.0;
-  createTimer();
-
-  int call_count = 0;
-  EXPECT_CALL(*mock_device_, triggerCapture())
-      .Times(::testing::AtLeast(3))
-      .WillRepeatedly([&call_count]() { ++call_count; });
-
-  startStreaming();
-
-  auto start = std::chrono::steady_clock::now();
-  while (call_count < 3) {
-    rclcpp::spin_some(node_);
-    if (std::chrono::steady_clock::now() - start > std::chrono::seconds(2)) {
-      FAIL() << "Timer did not fire at least 3 times within 2 seconds";
-    }
-  }
-  EXPECT_THAT(call_count, Ge(3));
-}
-
-TEST_F(StreamingLogicTest, CancelledTimerDoesNotFire) {
-  service_trigger_enabled_ = true;
-  streaming_framerate_hz_ = 100.0;
-  createTimer();
-  // Timer is created cancelled, never started
-
-  EXPECT_CALL(*mock_device_, triggerCapture()).Times(0);
-
-  rclcpp::spin_some(node_);
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  rclcpp::spin_some(node_);
-}
-
-// ---------- Full start-stop-start cycle ----------
-
-TEST_F(StreamingLogicTest, StartStopStartCycle) {
-  createTimer();
-  service_trigger_enabled_ = true;
-
-  auto r1 = callService(true);
+TEST_F(StreamingServiceTest, DoubleStartSucceeds) {
+  auto r1 = callSetStreaming(true);
+  ASSERT_NE(r1, nullptr);
   EXPECT_THAT(r1->success, IsTrue());
-  EXPECT_THAT(streaming_enabled_.load(), IsTrue());
 
-  auto r2 = callService(false);
+  auto r2 = callSetStreaming(true);
+  ASSERT_NE(r2, nullptr);
   EXPECT_THAT(r2->success, IsTrue());
-  EXPECT_THAT(streaming_enabled_.load(), IsFalse());
+  EXPECT_THAT(r2->message, Eq("Streaming started"));
+}
 
-  auto r3 = callService(true);
+// --- Full start-stop-start cycle ---
+
+TEST_F(StreamingServiceTest, StartStopStartCycle) {
+  auto r1 = callSetStreaming(true);
+  ASSERT_NE(r1, nullptr);
+  EXPECT_THAT(r1->success, IsTrue());
+
+  auto r2 = callSetStreaming(false);
+  ASSERT_NE(r2, nullptr);
+  EXPECT_THAT(r2->success, IsTrue());
+  EXPECT_THAT(r2->message, Eq("Streaming stopped"));
+
+  auto r3 = callSetStreaming(true);
+  ASSERT_NE(r3, nullptr);
   EXPECT_THAT(r3->success, IsTrue());
-  EXPECT_THAT(streaming_enabled_.load(), IsTrue());
+  EXPECT_THAT(r3->message, Eq("Streaming started"));
+}
+
+// --- Test with service_trigger_enabled=false ---
+
+class StreamingServiceDisabledTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    rclcpp::init(0, nullptr);
+
+    rclcpp::NodeOptions opts;
+    opts.append_parameter_override("service_trigger_enabled", false);
+    opts.append_parameter_override("streaming_framerate_hz", 10.0);
+    opts.append_parameter_override("enable_color", false);
+    opts.append_parameter_override("enable_depth", false);
+    opts.append_parameter_override("enable_ir", false);
+    opts.append_parameter_override("enable_left_ir", false);
+    opts.append_parameter_override("enable_right_ir", false);
+    opts.append_parameter_override("enable_gyro", false);
+    opts.append_parameter_override("enable_accel", false);
+    opts.append_parameter_override("enable_d2c_viewer", false);
+    opts.append_parameter_override("enable_colored_point_cloud", false);
+    opts.append_parameter_override("enable_point_cloud", false);
+    opts.append_parameter_override("enable_soft_filter", false);
+    opts.append_parameter_override("enable_frame_sync", false);
+    opts.append_parameter_override("publish_tf", false);
+    opts.append_parameter_override("enable_sync_output_accel_gyro", false);
+
+    node_ = std::make_shared<rclcpp::Node>("test_camera_node", opts);
+
+    auto device = std::make_shared<ob::Device>(nullptr);
+    auto parameters = std::make_shared<orbbec_camera::Parameters>(node_.get());
+
+    camera_node_ = std::make_unique<orbbec_camera::OBCameraNode>(
+        node_.get(), device, parameters, /*use_intra_process=*/false);
+  }
+
+  void TearDown() override {
+    camera_node_.reset();
+    node_.reset();
+    rclcpp::shutdown();
+  }
+
+  std::shared_ptr<SetBool::Response> callSetStreaming(bool data) {
+    auto client = node_->create_client<SetBool>("camera/set_streaming");
+    auto request = std::make_shared<SetBool::Request>();
+    request->data = data;
+
+    auto future = client->async_send_request(request);
+    auto start = std::chrono::steady_clock::now();
+    while (future.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) {
+      rclcpp::spin_some(node_);
+      if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5)) {
+        ADD_FAILURE() << "Service call timed out";
+        return nullptr;
+      }
+    }
+    return future.get();
+  }
+
+  rclcpp::Node::SharedPtr node_;
+  std::unique_ptr<orbbec_camera::OBCameraNode> camera_node_;
+};
+
+TEST_F(StreamingServiceDisabledTest, RejectsStartWhenServiceTriggerDisabled) {
+  auto response = callSetStreaming(true);
+  ASSERT_NE(response, nullptr);
+  EXPECT_THAT(response->success, IsFalse());
+  EXPECT_THAT(response->message, HasSubstr("service_trigger_enabled"));
+}
+
+TEST_F(StreamingServiceDisabledTest, RejectsStopWhenServiceTriggerDisabled) {
+  auto response = callSetStreaming(false);
+  ASSERT_NE(response, nullptr);
+  EXPECT_THAT(response->success, IsFalse());
+  EXPECT_THAT(response->message, HasSubstr("service_trigger_enabled"));
 }
 
 int main(int argc, char** argv) {

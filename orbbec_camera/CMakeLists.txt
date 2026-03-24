@@ -260,8 +260,13 @@ if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     ament_lint_auto_find_test_dependencies()
     find_package(ament_cmake_gmock REQUIRED)
-    ament_add_gmock(test_streaming_service test/test_streaming_service.cpp)
-    ament_target_dependencies(test_streaming_service rclcpp std_srvs)
+    ament_add_gmock(test_streaming_service
+        test/test_streaming_service.cpp
+        test/ob_sdk_stubs.cpp
+    )
+    target_include_directories(test_streaming_service PUBLIC ${COMMON_INCLUDE_DIRS})
+    target_link_libraries(test_streaming_service ${PROJECT_NAME})
+    ament_target_dependencies(test_streaming_service ${dependencies})
 endif()
 
 ament_export_include_directories(include)

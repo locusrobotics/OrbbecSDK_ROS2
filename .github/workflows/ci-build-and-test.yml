@@ -37,3 +37,6 @@ jobs:
         env:
           ROS_DISTRO: jazzy
           ROS_REPO: main
+          NOT_TEST_INSTALL: true
+          ENABLE_COVERAGE_TESTING: true
+          AFTER_SCRIPT: 'lcov --capture --directory . --output-file coverage.info && lcov --remove coverage.info "/opt/*" "/usr/*" "*/test/*" "*/SDK/*" --output-file coverage.info && lcov --list coverage.info'

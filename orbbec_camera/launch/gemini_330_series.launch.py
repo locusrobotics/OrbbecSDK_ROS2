@@ -1,7 +1,7 @@
 import os
 import yaml
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction, Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import PushRosNamespace, ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
@@ -339,6 +339,7 @@ def generate_launch_description():
                     namespace=namespace,
                     parameters=params,
                     output=output,
+                    on_exit=Shutdown(),
                 )
             ]
         else:
@@ -361,6 +362,7 @@ def generate_launch_description():
                         ),
                     ],
                     output=output,
+                    on_exit=Shutdown(),
                 )
             )
 

@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.7.0 (2026-03-30)
+--------------------
 * APG-2322 Make Orbbec driver a required component of launch (`#28 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/28>`_)
   This will cause the whole launch tree to crash on failure. It also
   strips out the respawn logic implemented before. It worked with one

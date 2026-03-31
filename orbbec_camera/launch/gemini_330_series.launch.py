@@ -1,11 +1,10 @@
 import os
 import yaml
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction, RegisterEventHandler, TimerAction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, GroupAction, Shutdown
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import PushRosNamespace, ComposableNodeContainer, Node, LoadComposableNodes
+from launch_ros.actions import PushRosNamespace, ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
-from launch.event_handlers import OnProcessStart
 
 
 def load_yaml(file_path):
@@ -71,8 +70,6 @@ def load_parameters(context, args):
 def generate_launch_description():
     args = [
         DeclareLaunchArgument('namespace', default_value=''),
-        DeclareLaunchArgument('respawn', default_value='false'),
-        DeclareLaunchArgument('respawn_delay', default_value='5.0'),
         DeclareLaunchArgument('output', default_value='screen'),
         DeclareLaunchArgument('device_type', default_value='camera'),
         DeclareLaunchArgument('camera_name', default_value='camera'),
@@ -332,8 +329,6 @@ def generate_launch_description():
         namespace = LaunchConfiguration("namespace").perform(context)
         output = LaunchConfiguration("output").perform(context)
         camera_name = LaunchConfiguration("camera_name").perform(context)
-        respawn = LaunchConfiguration("respawn").perform(context) == 'true'
-        respawn_delay = float(LaunchConfiguration("respawn_delay").perform(context))
         ros_distro = os.environ.get("ROS_DISTRO", "humble")
 
         if ros_distro == "foxy":
@@ -345,8 +340,7 @@ def generate_launch_description():
                     namespace=namespace,
                     parameters=params,
                     output=output,
-                    respawn=respawn,
-                    respawn_delay=respawn_delay,
+                    on_exit=Shutdown(),
                 )
             ]
         else:
@@ -354,48 +348,23 @@ def generate_launch_description():
             if namespace:
                 actions.append(PushRosNamespace(namespace))
 
-            camera_component = ComposableNode(
-                package="orbbec_camera",
-                plugin="orbbec_camera::OBCameraNodeDriver",
-                name=camera_name,
-                parameters=params,
-            )
-            
-            container = ComposableNodeContainer(
+            actions.append(
+                ComposableNodeContainer(
                     name=camera_name + "_container",
                     namespace="",
                     package="rclcpp_components",
                     executable="component_container",
-                    respawn=respawn,
-                    respawn_delay=respawn_delay,
-                    composable_node_descriptions=[],
-                    output=output,
-                    arguments=['--ros-args', '--log-level', 'INFO'],
-                )
-            
-            actions.append(
-                container
-            )
-
-            reload_on_restart = RegisterEventHandler(
-                OnProcessStart(
-                    target_action=container,
-                    on_start=[
-                        TimerAction(
-                            period=1.0,
-                            actions=[
-                                PushRosNamespace(namespace),
-                                LoadComposableNodes(
-                                    composable_node_descriptions=[camera_component],
-                                    target_container=container,
-                                )
-                            ],
-                        )
+                    composable_node_descriptions=[
+                        ComposableNode(
+                            package="orbbec_camera",
+                            plugin="orbbec_camera::OBCameraNodeDriver",
+                            name=camera_name,
+                            parameters=params,
+                        ),
                     ],
+                    output=output,
+                    on_exit=Shutdown(),
                 )
-            )
-            actions.append(
-                reload_on_restart
             )
 
             return [GroupAction(actions)]

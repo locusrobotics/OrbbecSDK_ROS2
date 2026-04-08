@@ -1565,6 +1565,9 @@ void OBCameraNode::startStreaming() {
     return;
   }
   RCLCPP_INFO_STREAM(logger_, "Starting streaming at " << streaming_framerate_hz_ << " Hz");
+  if (software_trigger_timer_) {
+    software_trigger_timer_->cancel();
+  }
   streaming_enabled_ = true;
   streaming_timer_->reset();
 }
@@ -1576,6 +1579,9 @@ void OBCameraNode::stopStreaming() {
   RCLCPP_INFO_STREAM(logger_, "Stopping streaming");
   streaming_enabled_ = false;
   streaming_timer_->cancel();
+  if (software_trigger_timer_) {
+    software_trigger_timer_->reset();
+  }
 }
 
 void OBCameraNode::streamingTimerCallback() {

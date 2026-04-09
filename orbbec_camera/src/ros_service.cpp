@@ -1568,6 +1568,9 @@ void OBCameraNode::startStreaming() {
   if (software_trigger_timer_) {
     software_trigger_timer_->cancel();
   }
+  if (trigger_failure_monitor_) {
+    trigger_failure_monitor_->cleanup();
+  }
   streaming_enabled_ = true;
   streaming_timer_->reset();
 }

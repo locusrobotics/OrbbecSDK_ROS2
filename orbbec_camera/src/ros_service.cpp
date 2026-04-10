@@ -1568,18 +1568,6 @@ void OBCameraNode::startStreaming() {
   if (software_trigger_timer_) {
     software_trigger_timer_->cancel();
   }
-  if (trigger_failure_monitor_) {
-    trigger_failure_monitor_->cleanup();
-  }
-  // Disable depth during streaming to reduce bandwidth
-  if (enable_stream_[DEPTH]) {
-    std::string msg;
-    if (toggleSensor(DEPTH, false, msg)) {
-      depth_disabled_by_streaming_ = true;
-    } else {
-      RCLCPP_WARN_STREAM(logger_, "Failed to disable depth for streaming: " << msg);
-    }
-  }
   streaming_enabled_ = true;
   streaming_timer_->reset();
 }
@@ -1593,15 +1581,6 @@ void OBCameraNode::stopStreaming() {
   streaming_timer_->cancel();
   if (software_trigger_timer_) {
     software_trigger_timer_->reset();
-  }
-  // Re-enable depth for normal trigger operation
-  if (depth_disabled_by_streaming_) {
-    std::string msg;
-    if (toggleSensor(DEPTH, true, msg)) {
-      depth_disabled_by_streaming_ = false;
-    } else {
-      RCLCPP_WARN_STREAM(logger_, "Failed to re-enable depth after streaming: " << msg);
-    }
   }
 }
 

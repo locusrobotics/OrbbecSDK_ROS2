@@ -621,7 +621,6 @@ class OBCameraNode {
   rclcpp::TimerBase::SharedPtr streaming_timer_;
   std::atomic_bool streaming_enabled_{false};
   double streaming_framerate_hz_ = 6.0;
-  bool depth_disabled_by_streaming_ = false;
 
   std::atomic_bool service_capture_started_{false};
   std::atomic_int number_of_rgb_frames_captured_{0};

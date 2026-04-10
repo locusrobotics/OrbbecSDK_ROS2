@@ -20,6 +20,17 @@ using ::testing::HasSubstr;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 
+// Test subclass to expose protected streaming cache members
+class TestableOBCameraNode : public orbbec_camera::OBCameraNode {
+ public:
+  using OBCameraNode::OBCameraNode;
+  using OBCameraNode::streaming_frame_lock_;
+  using OBCameraNode::streaming_color_image_;
+  using OBCameraNode::streaming_depth_image_;
+  using OBCameraNode::streaming_color_camera_info_;
+  using OBCameraNode::streaming_depth_camera_info_;
+};
+
 class StreamingServiceTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -50,7 +61,7 @@ class StreamingServiceTest : public ::testing::Test {
     auto device = std::make_shared<ob::Device>(nullptr);
     auto parameters = std::make_shared<orbbec_camera::Parameters>(node_.get());
 
-    camera_node_ = std::make_unique<orbbec_camera::OBCameraNode>(
+    camera_node_ = std::make_unique<TestableOBCameraNode>(
         node_.get(), device, parameters, /*use_intra_process=*/false);
   }
 
@@ -95,7 +106,7 @@ class StreamingServiceTest : public ::testing::Test {
   }
 
   rclcpp::Node::SharedPtr node_;
-  std::unique_ptr<orbbec_camera::OBCameraNode> camera_node_;
+  std::unique_ptr<TestableOBCameraNode> camera_node_;
 };
 
 // --- Service accepts start when service_trigger_enabled is true ---

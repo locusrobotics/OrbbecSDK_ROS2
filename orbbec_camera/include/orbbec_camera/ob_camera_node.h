@@ -16,6 +16,9 @@
 
 #pragma once
 
+#ifdef BUILDING_TESTS
+#include <gtest/gtest_prod.h>
+#endif
 #include <nlohmann/json.hpp>
 
 #include <memory>
@@ -156,6 +159,10 @@ typedef struct {
 } cs_param_t;
 
 class OBCameraNode {
+#ifdef BUILDING_TESTS
+  FRIEND_TEST(StreamingServiceTest, TriggerDuringStreamingWithCachedFramesSucceeds);
+#endif
+
  public:
   OBCameraNode(rclcpp::Node* node, std::shared_ptr<ob::Device> device,
                std::shared_ptr<Parameters> parameters, bool use_intra_process = false);

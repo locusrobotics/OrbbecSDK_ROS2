@@ -265,6 +265,7 @@ if(BUILD_TESTING)
         test/ob_sdk_stubs.cpp
     )
     target_include_directories(test_streaming_service PUBLIC ${COMMON_INCLUDE_DIRS})
+    target_compile_definitions(test_streaming_service PRIVATE BUILDING_TESTS)
     target_link_libraries(test_streaming_service ${PROJECT_NAME})
     ament_target_dependencies(test_streaming_service ${dependencies})
 endif()

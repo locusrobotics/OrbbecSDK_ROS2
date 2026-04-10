@@ -157,6 +157,33 @@ TEST_F(StreamingServiceTest, StartStopStartCycle) {
   EXPECT_THAT(r3->message, Eq("Streaming started"));
 }
 
+// --- Trigger during streaming with cached frames returns success ---
+
+TEST_F(StreamingServiceTest, TriggerDuringStreamingWithCachedFramesSucceeds) {
+  callSetStreaming(true);
+
+  // Inject cached frames directly to simulate what the frame callback does
+  {
+    std::lock_guard<std::mutex> lock(camera_node_->streaming_frame_lock_);
+    camera_node_->streaming_color_image_ =
+        std::make_unique<sensor_msgs::msg::Image>();
+    camera_node_->streaming_color_image_->width = 848;
+    camera_node_->streaming_color_image_->height = 530;
+    camera_node_->streaming_depth_image_ =
+        std::make_unique<sensor_msgs::msg::Image>();
+    camera_node_->streaming_depth_image_->width = 848;
+    camera_node_->streaming_depth_image_->height = 530;
+  }
+
+  auto response = callTrigger();
+  ASSERT_NE(response, nullptr);
+  EXPECT_THAT(response->success, IsTrue());
+  EXPECT_EQ(response->rgb_image.width, 848u);
+  EXPECT_EQ(response->rgb_image.height, 530u);
+  EXPECT_EQ(response->depth_image.width, 848u);
+  EXPECT_EQ(response->depth_image.height, 530u);
+}
+
 // --- Trigger during streaming with no cached frames returns failure ---
 
 TEST_F(StreamingServiceTest, TriggerDuringStreamingWithNoFramesFails) {

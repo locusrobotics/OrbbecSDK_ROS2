@@ -621,6 +621,12 @@ class OBCameraNode {
   rclcpp::TimerBase::SharedPtr streaming_timer_;
   std::atomic_bool streaming_enabled_{false};
   double streaming_framerate_hz_ = 6.0;
+  // Latest frames cached by streaming for instant service trigger responses
+  std::mutex streaming_frame_lock_;
+  sensor_msgs::msg::Image::UniquePtr streaming_color_image_;
+  sensor_msgs::msg::Image::UniquePtr streaming_depth_image_;
+  sensor_msgs::msg::CameraInfo streaming_color_camera_info_;
+  sensor_msgs::msg::CameraInfo streaming_depth_camera_info_;
 
   std::atomic_bool service_capture_started_{false};
   std::atomic_int number_of_rgb_frames_captured_{0};

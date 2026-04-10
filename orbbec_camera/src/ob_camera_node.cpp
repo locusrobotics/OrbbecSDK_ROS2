@@ -3368,6 +3368,17 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     }
     service_capture_cv_.notify_all();
   }
+  // Cache latest frames during streaming for instant service trigger responses
+  if (streaming_enabled_ && image_msg) {
+    std::lock_guard<std::mutex> lock(streaming_frame_lock_);
+    if (stream_index == COLOR) {
+      streaming_color_image_ = std::make_unique<sensor_msgs::msg::Image>(*image_msg);
+      streaming_color_camera_info_ = camera_info;
+    } else if (stream_index == DEPTH) {
+      streaming_depth_image_ = std::make_unique<sensor_msgs::msg::Image>(*image_msg);
+      streaming_depth_camera_info_ = camera_info;
+    }
+  }
   // Suppress depth publishing during streaming
   bool suppress = streaming_enabled_ && stream_index == DEPTH;
   if (!suppress && image_publishers_[stream_index]->get_subscription_count() > 0) {

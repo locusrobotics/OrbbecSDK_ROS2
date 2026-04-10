@@ -1346,6 +1346,27 @@ void OBCameraNode::sendSoftwareTriggerCallback(
     std::shared_ptr<CameraTrigger::Response>& response) {
   (void)request;
   if (service_trigger_enabled_ and !software_trigger_enabled_) {
+    // When streaming is active, return the latest cached frames immediately
+    if (streaming_enabled_) {
+      std::lock_guard<std::mutex> lock(streaming_frame_lock_);
+      if (streaming_color_image_ && streaming_depth_image_) {
+        response->success = true;
+        response->rgb_image = *streaming_color_image_;
+        response->depth_image = *streaming_depth_image_;
+        response->rgb_camera_info = streaming_color_camera_info_;
+        response->depth_camera_info = streaming_depth_camera_info_;
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordSuccess();
+        }
+      } else {
+        response->success = false;
+        response->message = "Streaming active but no frames captured yet";
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordFailure();
+        }
+      }
+      return;
+    }
     service_capture_started_ = true;
     try {
       RCLCPP_DEBUG_STREAM(logger_, "Triggering");
@@ -1579,6 +1600,11 @@ void OBCameraNode::stopStreaming() {
   RCLCPP_INFO_STREAM(logger_, "Stopping streaming");
   streaming_enabled_ = false;
   streaming_timer_->cancel();
+  {
+    std::lock_guard<std::mutex> lock(streaming_frame_lock_);
+    streaming_color_image_.reset();
+    streaming_depth_image_.reset();
+  }
   if (software_trigger_timer_) {
     software_trigger_timer_->reset();
   }

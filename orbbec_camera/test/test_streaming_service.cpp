@@ -11,8 +11,10 @@
 #include <std_srvs/srv/set_bool.hpp>
 
 #include "orbbec_camera/ob_camera_node.h"
+#include "orbbec_camera_msgs/srv/camera_trigger.hpp"
 
 using SetBool = std_srvs::srv::SetBool;
+using CameraTrigger = orbbec_camera_msgs::srv::CameraTrigger;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsFalse;
@@ -70,6 +72,22 @@ class StreamingServiceTest : public ::testing::Test {
       rclcpp::spin_some(node_);
       if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5)) {
         ADD_FAILURE() << "Service call timed out";
+        return nullptr;
+      }
+    }
+    return future.get();
+  }
+
+  std::shared_ptr<CameraTrigger::Response> callTrigger() {
+    auto client = node_->create_client<CameraTrigger>("camera/send_service_trigger");
+    auto request = std::make_shared<CameraTrigger::Request>();
+
+    auto future = client->async_send_request(request);
+    auto start = std::chrono::steady_clock::now();
+    while (future.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) {
+      rclcpp::spin_some(node_);
+      if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5)) {
+        ADD_FAILURE() << "Trigger service call timed out";
         return nullptr;
       }
     }
@@ -137,6 +155,29 @@ TEST_F(StreamingServiceTest, StartStopStartCycle) {
   ASSERT_NE(r3, nullptr);
   EXPECT_THAT(r3->success, IsTrue());
   EXPECT_THAT(r3->message, Eq("Streaming started"));
+}
+
+// --- Trigger during streaming with no cached frames returns failure ---
+
+TEST_F(StreamingServiceTest, TriggerDuringStreamingWithNoFramesFails) {
+  callSetStreaming(true);
+  auto response = callTrigger();
+  ASSERT_NE(response, nullptr);
+  EXPECT_THAT(response->success, IsFalse());
+  EXPECT_THAT(response->message, HasSubstr("no frames captured yet"));
+}
+
+// --- Trigger after stopping streaming does not return stale cached frames ---
+
+TEST_F(StreamingServiceTest, TriggerAfterStopStreamingDoesNotReturnCachedFrames) {
+  callSetStreaming(true);
+  callSetStreaming(false);
+  // After stopping, the trigger should go through the normal (non-streaming) path.
+  // With stubbed SDK producing no frames, it will fail with the normal timeout message.
+  auto response = callTrigger();
+  ASSERT_NE(response, nullptr);
+  EXPECT_THAT(response->success, IsFalse());
+  EXPECT_THAT(response->message, Eq("Failed to capture images"));
 }
 
 // --- Test with service_trigger_enabled=false ---

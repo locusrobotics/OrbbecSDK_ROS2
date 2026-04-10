@@ -3110,7 +3110,7 @@ bool OBCameraNode::decodeColorFrameToBuffer(const std::shared_ptr<ob::Frame> &fr
   if (enable_colored_point_cloud_ && depth_registration_cloud_pub_->get_subscription_count() > 0) {
     has_subscriber = true;
   }
-  if (!has_subscriber && !service_capture_started_) {
+  if (!has_subscriber && !service_capture_started_ && !streaming_enabled_) {
     return false;
   }
   if (metadata_publishers_.count(COLOR) &&
@@ -3203,7 +3203,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   has_subscriber =
       has_subscriber || (metadata_publishers_.count(stream_index) &&
                          metadata_publishers_[stream_index]->get_subscription_count() > 0);
-  if (!has_subscriber && !service_capture_started_) {
+  if (!has_subscriber && !service_capture_started_ && !streaming_enabled_) {
     return;
   }
   std::shared_ptr<ob::VideoFrame> video_frame;
@@ -3316,7 +3316,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     publishMetadata(frame, stream_index, camera_info.header);
   }
   CHECK_NOTNULL(image_publishers_[stream_index]);
-  if (image_publishers_[stream_index]->get_subscription_count() == 0 && !service_capture_started_) {
+  if (image_publishers_[stream_index]->get_subscription_count() == 0 && !service_capture_started_ && !streaming_enabled_) {
     return;
   }
   if (image.empty() || image.cols != width || image.rows != height) {

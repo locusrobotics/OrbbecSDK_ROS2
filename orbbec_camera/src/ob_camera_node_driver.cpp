@@ -319,8 +319,7 @@ void OBCameraNodeDriver::init() {
   device_status_pub_ = this->create_publisher<orbbec_camera_msgs::msg::DeviceStatus>(
       "device_status", rclcpp::QoS(1).transient_local());
 
-  // Publishes the camera name when this driver's device disconnects, consumed by the
-  // ros_victoria_metrics_bridge as a counter source (no array_metrics_msgs dependency).
+  // Publishes the camera name when this driver's device disconnects.
   disconnect_event_pub_ =
       this->create_publisher<std_msgs::msg::String>("/orbbec_disconnect_events", rclcpp::QoS(10));
 }

@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "dynamic_params.h"
 #include <orbbec_camera_msgs/msg/device_status.hpp>
+#include <std_msgs/msg/string.hpp>
 
 #include "libobsensor/ObSensor.hpp"
 #include <pthread.h>
@@ -143,6 +144,8 @@ class OBCameraNodeDriver : public rclcpp::Node {
   rclcpp::TimerBase::SharedPtr device_status_timer_ = nullptr;
   int device_status_interval_hz = 2;  // 2Hz
   rclcpp::Publisher<orbbec_camera_msgs::msg::DeviceStatus>::SharedPtr device_status_pub_ = nullptr;
+  // Publishes the camera name whenever this driver's device disconnects, for metrics bridging.
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr disconnect_event_pub_ = nullptr;
   std::string node_name_;
   bool force_ip_enable_{false};
   bool force_ip_dhcp_{false};

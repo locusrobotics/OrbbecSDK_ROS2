@@ -318,6 +318,11 @@ void OBCameraNodeDriver::init() {
   // Initialize device status publisher
   device_status_pub_ = this->create_publisher<orbbec_camera_msgs::msg::DeviceStatus>(
       "device_status", rclcpp::QoS(1).transient_local());
+
+  // Publishes the camera name when this driver's device disconnects, consumed by the
+  // ros_victoria_metrics_bridge as a counter source (no array_metrics_msgs dependency).
+  disconnect_event_pub_ =
+      this->create_publisher<std_msgs::msg::String>("/orbbec_disconnect_events", rclcpp::QoS(10));
 }
 
 void OBCameraNodeDriver::onDeviceConnected(const std::shared_ptr<ob::DeviceList> &device_list) {
@@ -382,6 +387,12 @@ void OBCameraNodeDriver::onDeviceDisconnected(const std::shared_ptr<ob::DeviceLi
     if (uid == device_unique_id_ || serial_number_ == serial_number) {
       RCLCPP_INFO_STREAM(logger_,
                          "device with " << uid << " disconnected, notify reset device thread 1.");
+      // Emit a disconnect event with the camera name for the metrics bridge.
+      if (disconnect_event_pub_) {
+        std_msgs::msg::String disconnect_msg;
+        disconnect_msg.data = g_camera_name;
+        disconnect_event_pub_->publish(disconnect_msg);
+      }
       reset_device_flag_ = true;
       reset_device_cond_.notify_all();
       RCLCPP_INFO_STREAM(logger_,

@@ -2,6 +2,11 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* APG-2731: Publish camera name on device disconnect (`#29 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/29>`_)
+* Contributors: Sushant Raj
+
 999.7.0 (2026-03-30)
 --------------------
 * APG-2322 Make Orbbec driver a required component of launch (`#28 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/28>`_)

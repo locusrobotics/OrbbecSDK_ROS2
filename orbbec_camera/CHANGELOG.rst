@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.8.0 (2026-06-16)
+--------------------
 * APG-2731: Publish camera name on device disconnect (`#29 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/29>`_)
 * Contributors: Sushant Raj
 

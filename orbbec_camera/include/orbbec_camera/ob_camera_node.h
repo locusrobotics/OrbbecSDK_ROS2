@@ -382,6 +382,12 @@ class OBCameraNode {
   void sendSoftwareTriggerCallback(const std::shared_ptr<CameraTrigger::Request>& request,
                                    std::shared_ptr<CameraTrigger::Response>& response);
 
+  void setStreamingCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
+                            std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
+  void startStreaming();
+  void stopStreaming();
+  void streamingTimerCallback();
+
   bool toggleSensor(const stream_index_pair& stream_index, bool enabled, std::string& msg);
 
   void saveImageCallback(const std::shared_ptr<std_srvs::srv::Empty::Request>& request,
@@ -610,6 +616,21 @@ class OBCameraNode {
   rclcpp::Service<GetUserCalibParams>::SharedPtr get_user_calib_params_srv_;
   rclcpp::Service<SetUserCalibParams>::SharedPtr set_user_calib_params_srv_;
 
+  // Streaming: periodic triggering for continuous image publishing
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_streaming_srv_;
+  rclcpp::TimerBase::SharedPtr streaming_timer_;
+  std::atomic_bool streaming_enabled_{false};
+  double streaming_framerate_hz_ = 6.0;
+
+ protected:
+  // Latest frames cached by streaming for instant service trigger responses
+  std::mutex streaming_frame_lock_;
+  sensor_msgs::msg::Image::UniquePtr streaming_color_image_;
+  sensor_msgs::msg::Image::UniquePtr streaming_depth_image_;
+  sensor_msgs::msg::CameraInfo streaming_color_camera_info_;
+  sensor_msgs::msg::CameraInfo streaming_depth_camera_info_;
+
+ private:
 
   std::atomic_bool service_capture_started_{false};
   std::atomic_int number_of_rgb_frames_captured_{0};

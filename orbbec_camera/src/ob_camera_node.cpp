@@ -1921,6 +1921,7 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
   setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
   setAndGetNodeParameter<bool>(service_trigger_enabled_, "service_trigger_enabled", false);
+  setAndGetNodeParameter<double>(streaming_framerate_hz_, "streaming_framerate_hz", 6.0);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {
@@ -3109,7 +3110,7 @@ bool OBCameraNode::decodeColorFrameToBuffer(const std::shared_ptr<ob::Frame> &fr
   if (enable_colored_point_cloud_ && depth_registration_cloud_pub_->get_subscription_count() > 0) {
     has_subscriber = true;
   }
-  if (!has_subscriber && !service_capture_started_) {
+  if (!has_subscriber && !service_capture_started_ && !streaming_enabled_) {
     return false;
   }
   if (metadata_publishers_.count(COLOR) &&
@@ -3202,7 +3203,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   has_subscriber =
       has_subscriber || (metadata_publishers_.count(stream_index) &&
                          metadata_publishers_[stream_index]->get_subscription_count() > 0);
-  if (!has_subscriber && !service_capture_started_) {
+  if (!has_subscriber && !service_capture_started_ && !streaming_enabled_) {
     return;
   }
   std::shared_ptr<ob::VideoFrame> video_frame;
@@ -3315,7 +3316,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     publishMetadata(frame, stream_index, camera_info.header);
   }
   CHECK_NOTNULL(image_publishers_[stream_index]);
-  if (image_publishers_[stream_index]->get_subscription_count() == 0 && !service_capture_started_) {
+  if (image_publishers_[stream_index]->get_subscription_count() == 0 && !service_capture_started_ && !streaming_enabled_) {
     return;
   }
   if (image.empty() || image.cols != width || image.rows != height) {
@@ -3353,26 +3354,35 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   } else if (stream_index == DEPTH) {
     fps_delay_status_depth_->tick(frame_timestamp);
   }
-  if (image_publishers_[stream_index]->get_subscription_count() > 0) {
-    image_publishers_[stream_index]->publish(std::move(image_msg));
-  }
+  // Store image for service capture BEFORE publishing (publish moves the pointer)
   if (service_trigger_enabled_ and service_capture_started_) {
     std::unique_lock<std::mutex> lock(service_capture_lock_);
-    if (stream_index == COLOR) {
-      if (image_msg) {
-        number_of_rgb_frames_captured_++;
-        color_image_ = std::move(image_msg);
-	color_image_camera_info_ = camera_info;
-      }
-    }
-    else if (stream_index == DEPTH) {
-      if (image_msg) {
-        number_of_depth_frames_captured_++;
-        depth_image_ = std::move(image_msg);
-	depth_image_camera_info_ = camera_info;
-      }
+    if (stream_index == COLOR && image_msg) {
+      number_of_rgb_frames_captured_++;
+      color_image_ = std::make_unique<sensor_msgs::msg::Image>(*image_msg);
+      color_image_camera_info_ = camera_info;
+    } else if (stream_index == DEPTH && image_msg) {
+      number_of_depth_frames_captured_++;
+      depth_image_ = std::make_unique<sensor_msgs::msg::Image>(*image_msg);
+      depth_image_camera_info_ = camera_info;
     }
     service_capture_cv_.notify_all();
+  }
+  // Cache latest frames during streaming for instant service trigger responses
+  if (streaming_enabled_ && image_msg) {
+    std::lock_guard<std::mutex> lock(streaming_frame_lock_);
+    if (stream_index == COLOR) {
+      streaming_color_image_ = std::make_unique<sensor_msgs::msg::Image>(*image_msg);
+      streaming_color_camera_info_ = camera_info;
+    } else if (stream_index == DEPTH) {
+      streaming_depth_image_ = std::make_unique<sensor_msgs::msg::Image>(*image_msg);
+      streaming_depth_camera_info_ = camera_info;
+    }
+  }
+  // Suppress depth publishing during streaming
+  bool suppress = streaming_enabled_ && stream_index == DEPTH;
+  if (!suppress && image_publishers_[stream_index]->get_subscription_count() > 0) {
+    image_publishers_[stream_index]->publish(std::move(image_msg));
   }
 }
 

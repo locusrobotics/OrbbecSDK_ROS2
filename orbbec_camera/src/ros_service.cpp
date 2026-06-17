@@ -231,6 +231,16 @@ void OBCameraNode::setupCameraCtrlServices() {
                                      std::shared_ptr<CameraTrigger::Response> response) {
         sendSoftwareTriggerCallback(request, response);
       });
+  set_streaming_srv_ = node_->create_service<SetBool>(
+      camera_name_ + "/" + "set_streaming",
+      [this](const std::shared_ptr<SetBool::Request> request,
+             std::shared_ptr<SetBool::Response> response) {
+        setStreamingCallback(request, response);
+      });
+  streaming_timer_ = node_->create_wall_timer(
+      std::chrono::milliseconds(static_cast<int>(1000.0 / streaming_framerate_hz_)),
+      [this]() { streamingTimerCallback(); });
+  streaming_timer_->cancel();
   write_customerdata_srv_ = node_->create_service<SetString>(
       camera_name_ + "/""write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
                                     std::shared_ptr<SetString::Response> response) {
@@ -1336,6 +1346,27 @@ void OBCameraNode::sendSoftwareTriggerCallback(
     std::shared_ptr<CameraTrigger::Response>& response) {
   (void)request;
   if (service_trigger_enabled_ and !software_trigger_enabled_) {
+    // When streaming is active, return the latest cached frames immediately
+    if (streaming_enabled_) {
+      std::lock_guard<std::mutex> lock(streaming_frame_lock_);
+      if (streaming_color_image_ && streaming_depth_image_) {
+        response->success = true;
+        response->rgb_image = *streaming_color_image_;
+        response->depth_image = *streaming_depth_image_;
+        response->rgb_camera_info = streaming_color_camera_info_;
+        response->depth_camera_info = streaming_depth_camera_info_;
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordSuccess();
+        }
+      } else {
+        response->success = false;
+        response->message = "Streaming active but no frames captured yet";
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordFailure();
+        }
+      }
+      return;
+    }
     service_capture_started_ = true;
     try {
       RCLCPP_DEBUG_STREAM(logger_, "Triggering");
@@ -1533,4 +1564,65 @@ void OBCameraNode::getUserCalibParamsCallback(
     response->message = "exception occurred";
   }
 }
+void OBCameraNode::setStreamingCallback(
+    const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
+    std::shared_ptr<std_srvs::srv::SetBool::Response>& response) {
+  if (!service_trigger_enabled_) {
+    response->success = false;
+    response->message = "Streaming requires service_trigger_enabled to be true";
+    return;
+  }
+  if (request->data) {
+    startStreaming();
+  } else {
+    stopStreaming();
+  }
+  response->success = true;
+  response->message = streaming_enabled_ ? "Streaming started" : "Streaming stopped";
+}
+
+void OBCameraNode::startStreaming() {
+  if (streaming_enabled_) {
+    return;
+  }
+  RCLCPP_INFO_STREAM(logger_, "Starting streaming at " << streaming_framerate_hz_ << " Hz");
+  if (software_trigger_timer_) {
+    software_trigger_timer_->cancel();
+  }
+  streaming_enabled_ = true;
+  streaming_timer_->reset();
+}
+
+void OBCameraNode::stopStreaming() {
+  if (!streaming_enabled_) {
+    return;
+  }
+  RCLCPP_INFO_STREAM(logger_, "Stopping streaming");
+  streaming_enabled_ = false;
+  streaming_timer_->cancel();
+  {
+    std::lock_guard<std::mutex> lock(streaming_frame_lock_);
+    streaming_color_image_.reset();
+    streaming_depth_image_.reset();
+  }
+  if (software_trigger_timer_) {
+    software_trigger_timer_->reset();
+  }
+}
+
+void OBCameraNode::streamingTimerCallback() {
+  if (!streaming_enabled_ || !service_trigger_enabled_) {
+    return;
+  }
+  try {
+    device_->triggerCapture();
+  } catch (const ob::Error& e) {
+    RCLCPP_WARN_STREAM_THROTTLE(logger_, *node_->get_clock(), 5000,
+                                "Streaming trigger failed: " << e.getMessage());
+  } catch (const std::exception& e) {
+    RCLCPP_WARN_STREAM_THROTTLE(logger_, *node_->get_clock(), 5000,
+                                "Streaming trigger failed: " << e.what());
+  }
+}
+
 }  // namespace orbbec_camera

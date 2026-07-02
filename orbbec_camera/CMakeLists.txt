@@ -25,6 +25,7 @@ set(dependencies
     backward_ros
     camera_info_manager
     image_transport
+    message_filters
     image_publisher
     lifecycle_msgs
     OpenCV
@@ -59,6 +60,7 @@ set(dependencies_targets
     cv_bridge::cv_bridge
     camera_info_manager::camera_info_manager
     image_transport::image_transport
+    message_filters::message_filters
     ${lifecycle_msgs_TARGETS}
     ${orbbec_camera_msgs_TARGETS}
     rclcpp::rclcpp

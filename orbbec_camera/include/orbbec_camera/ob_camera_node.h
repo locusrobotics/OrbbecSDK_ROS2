@@ -44,7 +44,6 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
 
-#include <image_publisher/image_publisher.hpp>
 #include <image_transport/publisher.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include "libobsensor/ObSensor.hpp"

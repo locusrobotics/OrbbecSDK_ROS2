@@ -12,7 +12,9 @@ option(USE_NV_HW_DECODER "Use Nvidia hardware decoder" OFF)
 option(INSTALL_UDEV_RULES "Install udev rule for Orbbec cameras" ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Werror -Wno-pedantic -Wno-array-bounds)
+    # ROS L (lyrical) deprecates the rmw_qos_profile_t QoS overloads (image_transport,
+    # rclcpp, ...) that this driver still uses; keep them as warnings, not errors.
+    add_compile_options(-Wall -Wextra -Werror -Wno-error=deprecated-declarations -Wno-pedantic -Wno-array-bounds)
 endif()
 
 # find dependencies

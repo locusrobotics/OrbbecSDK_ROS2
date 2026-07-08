@@ -29,6 +29,11 @@ class TriggerFailureMonitor {
   using TriggerCallback = std::function<void()>;
 
   /**
+   * @brief Callback type invoked on each recorded trigger failure
+   */
+  using FailureReportCallback = std::function<void()>;
+
+  /**
    * @brief Constructor
    * @param node ROS node for creating timer
    * @param logger Logger for diagnostic messages
@@ -72,6 +77,12 @@ class TriggerFailureMonitor {
    * @param callback Function to call to perform a trigger
    */
   void setTriggerCallback(TriggerCallback callback);
+
+  /**
+   * @brief Set callback invoked on each recorded trigger failure
+   * @param callback Function to call to report a failure
+   */
+  void setFailureReportCallback(FailureReportCallback callback);
 
   /**
    * @brief Record a trigger failure
@@ -120,6 +131,7 @@ class TriggerFailureMonitor {
   StreamControlCallback activate_callback_;         
   PipelineStatusCallback pipeline_status_callback_;
   TriggerCallback trigger_callback_;
+  FailureReportCallback failure_report_callback_;
   int failures_before_recovery_{2};
   double timer_period_seconds_{1.0}; 
   bool recovery_in_progress_{false};

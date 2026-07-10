@@ -748,7 +748,6 @@ class OBCameraNode {
   int color_denoising_level_ = -1;
   bool enable_color_decimation_filter_ = false;
   int color_decimation_filter_scale_ = -1;
-  int color_denoising_level_ = -1;
   bool enable_left_color_decimation_filter_ = false;
   int left_color_decimation_filter_scale_ = -1;
   bool enable_right_color_decimation_filter_ = false;

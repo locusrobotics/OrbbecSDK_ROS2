@@ -2,8 +2,8 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.9.0 (2026-07-10)
+--------------------
 * [APG-2810] Report orbbec trigger failures to statsd (`#31 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/31>`_)
 * Contributors: Bence Magyar
 

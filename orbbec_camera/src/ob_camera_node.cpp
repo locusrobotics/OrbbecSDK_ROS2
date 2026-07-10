@@ -2240,6 +2240,16 @@ void OBCameraNode::setupTriggerFailureMonitor() {
       [this]() {
         TRY_EXECUTE_BLOCK(device_->triggerCapture());
       });
+
+  trigger_failure_event_pub_ = node_->create_publisher<std_msgs::msg::String>(
+      "/orbbec_trigger_failure_events", rclcpp::QoS(10));
+  trigger_failure_monitor_->setFailureReportCallback([this]() {
+    if (trigger_failure_event_pub_) {
+      std_msgs::msg::String failure_msg;
+      failure_msg.data = camera_name_;
+      trigger_failure_event_pub_->publish(failure_msg);
+    }
+  });
 }
 
 void OBCameraNode::setupDiagnosticUpdater() {

@@ -893,5 +893,6 @@ class OBCameraNode {
 
   // Trigger failure monitor for automatic recovery
   std::unique_ptr<TriggerFailureMonitor> trigger_failure_monitor_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr trigger_failure_event_pub_ = nullptr;
 };
 }  // namespace orbbec_camera

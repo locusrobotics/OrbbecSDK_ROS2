@@ -2,6 +2,11 @@
 Changelog for package orbbec_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [APG-2810] Report orbbec trigger failures to statsd (`#31 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/31>`_)
+* Contributors: Bence Magyar
+
 999.8.0 (2026-06-16)
 --------------------
 * APG-2731: Publish camera name on device disconnect (`#29 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/29>`_)

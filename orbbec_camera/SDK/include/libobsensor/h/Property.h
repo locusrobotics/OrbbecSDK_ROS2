@@ -236,7 +236,7 @@ typedef enum {
     OB_PROP_DEVICE_COMMUNICATION_TYPE_INT = 97,
 
     /**
-     * @brief Switch infrared imaging mode, 0: active IR mode, 1: passive IR mode
+     * @brief Switch infrared imaging mode, 0: positive IR mode, 1: passive IR mode
      */
     OB_PROP_SWITCH_IR_MODE_INT = 98,
 
@@ -463,7 +463,7 @@ typedef enum {
      */
     OB_PROP_DISP_SEARCH_OFFSET_INT = 196,
 
-     /**
+    /**
      * @brief cpu temperature correction . true: calibrate temperature
      */
     OB_PROP_CPU_TEMPERATURE_CALIBRATION_BOOL = 199,
@@ -557,9 +557,91 @@ typedef enum {
     OB_PROP_INTRA_CAMERA_SYNC_REFERENCE_INT = 236,
 
     /**
+     * @brief Right Color sensor rotation, angle{0, 90, 180, 270}
+     */
+    OB_PROP_COLOR_RIGHT_ROTATE_INT = 242,
+
+    /**
+     * @brief Right Color mirror
+     */
+    OB_PROP_COLOR_RIGHT_MIRROR_BOOL = 243,
+
+    /**
+     * @brief Right Color flip
+     */
+    OB_PROP_COLOR_RIGHT_FLIP_BOOL = 244,
+
+    /**
+     * @brief Device AE reference source
+     * - 0: Depth based
+     * - 1: Color based
+     */
+    OB_PROP_DEVICE_AE_REFERENCE_INT = 247,
+
+    /**
+     * @brief Device AE strategy
+     * - 0: Default
+     * - 1: Motion
+     */
+    OB_PROP_DEVICE_AE_STRATEGY_INT = 248,
+
+    /**
      * @brief Color camera ROI brightness adjustment
      */
     OB_PROP_COLOR_ROI_BRIGHTNESS_INT = 249,
+
+    /**
+     * @brief Left Color sensor rotation, angle{0, 90, 180, 270}
+     */
+    OB_PROP_COLOR_LEFT_ROTATE_INT = 251,
+
+    /**
+     * @brief Left Color mirror
+     */
+    OB_PROP_COLOR_LEFT_MIRROR_BOOL = 252,
+
+    /**
+     * @brief Left Color flip
+     */
+    OB_PROP_COLOR_LEFT_FLIP_BOOL = 253,
+
+    /**
+     * @brief Color camera preset priority
+     */
+    OB_PROP_COLOR_PRESET_PRIORITY_INT = 255,
+
+    /**
+     * @brief LLA (Link Local Address) switch
+     *
+     * @deprecated The property is deprecated
+     */
+    OB_PROP_DEVICE_NETWORK_LLA_BOOL = 257,
+
+    /**
+     * @brief Color anti-flicker switch
+     */
+    OB_PROP_COLOR_ANTI_FLICKER_BOOL = 259,
+
+    /**
+     * @brief Device IP mode
+     * @param value
+     *   - 0: AMR Sensor Mode.
+     *        Typically configured for ehternet interface sensors for AMRs.
+     *        When DHCP is enabled and the device fails to obtain a valid IP address, it falls back to Persistent IP.
+     *        If neither of Persistent IP and DHCP is specified, Persistent IP is enabled by default.
+     *
+     *   - 1: Industrial Sensor Mode.
+     *        Typically configured for ehternet interface sensors for industrial applications.
+     *        When DHCP is enabled and the device fails to obtain a valid IP address, it falls back to LLA (Link-Local Address).
+     *        If Persistent IP and DHCP are both enabled, the sensor starts with the attemp to used the specified persistent IP
+     *        and falls back to DHCP if Persistent IP fails.
+     */
+    OB_PROP_DEVICE_IP_MODE_INT = 260,
+
+     /**
+     * @brief DHCP assign IP timeout, unit: second
+     */   
+    OB_PROP_DHCP_ASSIGN_IP_TIMEOUT_INT = 261,
 
     /**
      * @brief Baseline calibration parameters
@@ -598,6 +680,7 @@ typedef enum {
 
     /**
      * @brief Device IP address configuration
+     * @see OBNetIpConfig
      */
     OB_STRUCT_DEVICE_IP_ADDR_CONFIG = 1041,
 
@@ -614,6 +697,7 @@ typedef enum {
     /**
      * @brief Device network static ip config record
      * @brief Using for get last static ip config, witch is record in device flash when user set static ip config
+     * @see OBNetIpConfig
      *
      * @attention read only
      */
@@ -654,6 +738,17 @@ typedef enum {
      * @brief Preset resolution ratio configuration
      */
     OB_STRUCT_PRESET_RESOLUTION_CONFIG = 1069,
+
+    /**
+     * @brief Color sensor synchronized exposure parameter structure
+     */
+    OB_STRUCT_COLOR_SYNCED_EXPOSURE_PARAM = 1077,
+
+    /**
+     * @brief Device IP address configuration v2
+     * @see OBNetIpConfigV2
+     */
+    OB_STRUCT_DEVICE_IP_ADDR_CONFIG_V2 = 1088,
 
     /**
      * @brief Color camera auto exposure
@@ -776,9 +871,9 @@ typedef enum {
     OB_PROP_DEPTH_RM_FILTER_BOOL = 2029,
 
     /**
-     * @brief Color camera maximal gain
+     * @brief Color AE max gain
      */
-    OB_PROP_COLOR_MAXIMAL_GAIN_INT = 2030,
+    OB_PROP_COLOR_AE_MAX_GAIN_INT = 2030,
 
     /**
      * @brief Color camera shutter gain
@@ -891,6 +986,13 @@ typedef enum {
      */
     OB_PROP_COLOR_DENOISING_LEVEL_INT = 5525,
 
+    /**
+     * @brief Indicates whether the device will go offline after applying IP configuration.
+     * This property does not represent an actual command; it is a capability flag only,
+     * used to identify whether the current device has the behavior of going offline after IP config is applied.
+     */
+    OB_PROP_DEVICE_OFFLINE_AFTER_IP_CONFIG_APPLY = 5555,
+
     /*
      * @brief LiDAR: set/get IP address
      */
@@ -957,7 +1059,7 @@ typedef enum {
     OB_PROP_LIDAR_WARNING_INFO_INT = 8012,
 
     /**
-     * @brief LiDAR: get realtime motor spin speed, unit:0.01rpm 
+     * @brief LiDAR: get realtime motor spin speed, unit:0.01rpm
      */
     OB_PROP_LIDAR_MOTOR_SPIN_SPEED_INT = 8013,
 
@@ -979,7 +1081,7 @@ typedef enum {
     /**
      * @brief LiDAR: get/set repetitive scan mode
      */
-    OB_PROP_LIDAR_REPETITIVE_SCAN_MODE_INT = 8017,
+    OB_PROP_LIDAR_REPETITIVE_SCAN_MODE_INT = 8017
 } OBPropertyID,
     ob_property_id;
 

@@ -22,6 +22,37 @@
 #include "orbbec_camera/utils.h"
 namespace orbbec_camera {
 
+namespace {
+
+bool isGemini330SeriesForDisparity(uint32_t pid) {
+  return pid == GEMINI_335_PID || pid == GEMINI_336_PID || pid == GEMINI_330_PID ||
+         pid == GEMINI_335L_PID || pid == GEMINI_336L_PID || pid == GEMINI_330L_PID ||
+         pid == GEMINI_335LG_PID || pid == GEMINI_335LE_PID || pid == GEMINI_338_PID ||
+         pid == GEMINI_338LG_PID || pid == GEMINI_338LE_PID || pid == GEMINI_338L_PID ||
+         pid == GEMINI_331L_PID;
+}
+
+bool isSupportedDisparityResolutionForPid(uint32_t pid, int width, int height) {
+  if (pid == GEMINI_335LE_PID || pid == GEMINI_338LE_PID) {
+    return (width == 1280 && height == 800) || (width == 640 && height == 400) ||
+           (width == 424 && height == 266) || (width == 320 && height == 200);
+  }
+
+  return (width == 1280 && height == 800) || (width == 1280 && height == 720) ||
+         (width == 640 && height == 400) || (width == 424 && height == 266);
+}
+
+std::string getDisparityResolutionHintByPid(uint32_t pid) {
+  if (pid == GEMINI_335LE_PID || pid == GEMINI_338LE_PID) {
+    return "Supported resolutions for the current device: 1280x800/640x400/424x266/320x200";
+  }
+
+  return "Supported resolutions for the current device: "
+         "1280x800/1280x720/640x400/424x266";
+}
+
+}  // namespace
+
 void OBCameraNode::setupCameraCtrlServices() {
   using std_srvs::srv::SetBool;
   for (auto stream_index : IMAGE_STREAMS) {
@@ -231,25 +262,37 @@ void OBCameraNode::setupCameraCtrlServices() {
                                      std::shared_ptr<CameraTrigger::Response> response) {
         sendSoftwareTriggerCallback(request, response);
       });
-  write_customerdata_srv_ = node_->create_service<SetString>(
-      camera_name_ + "/""write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
-                                    std::shared_ptr<SetString::Response> response) {
-        writeCustomerDataCallback(request, response);
+  if (device_->getDeviceInfo()->getPid() == GEMINI_435Le_PID) {
+    write_customerdata_srv_ = node_->create_service<SetString>(
+        camera_name_ + "/" + "write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
+                                      std::shared_ptr<SetString::Response> response) {
+          writeCustomerDataCallback(request, response);
+        });
+    read_customerdata_srv_ = node_->create_service<GetString>(
+        camera_name_ + "/" + "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
+                                     std::shared_ptr<GetString::Response> response) {
+          readCustomerDataCallback(request, response);
+        });
+    set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
+        camera_name_ + "/" + "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
+                                        std::shared_ptr<SetUserCalibParams::Response> response) {
+          setUserCalibParamsCallback(request, response);
+        });
+    get_user_calib_params_srv_ = node_->create_service<GetUserCalibParams>(
+        camera_name_ + "/" + "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
+                                        std::shared_ptr<GetUserCalibParams::Response> response) {
+          getUserCalibParamsCallback(request, response);
+        });
+  }
+  set_ae_reference_stream_srv_ = node_->create_service<SetString>(
+      camera_name_ + "/" + "set_ae_reference_stream", [this](const std::shared_ptr<SetString::Request> request,
+                                        std::shared_ptr<SetString::Response> response) {
+        setAEReferenceStreamCallback(request, response);
       });
-  read_customerdata_srv_ = node_->create_service<GetString>(
-      camera_name_ + "/" + "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
-                                   std::shared_ptr<GetString::Response> response) {
-        readCustomerDataCallback(request, response);
-      });
-  set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
-      camera_name_ + "/" + "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
-                                      std::shared_ptr<SetUserCalibParams::Response> response) {
-        setUserCalibParamsCallback(request, response);
-      });
-  get_user_calib_params_srv_ = node_->create_service<GetUserCalibParams>(
-      camera_name_ + "/" + "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
-                                      std::shared_ptr<GetUserCalibParams::Response> response) {
-        getUserCalibParamsCallback(request, response);
+  set_ae_strategy_srv_ = node_->create_service<SetString>(
+      camera_name_ + "/" + "set_ae_strategy", [this](const std::shared_ptr<SetString::Request> request,
+                                std::shared_ptr<SetString::Response> response) {
+        setAEStrategyCallback(request, response);
       });
   set_streams_enable_srv_ = node_->create_service<SetBool>(
       camera_name_ + "/" + "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
@@ -271,12 +314,23 @@ void OBCameraNode::setupCameraCtrlServices() {
                                             std::shared_ptr<GetInt32::Response> response) {
         getPointCloudDecimationCallback(request, response);
       });
+  set_disparity_range_mode_srv_ = node_->create_service<SetInt32>(
+      camera_name_ + "/" + "set_disparity_range_mode", [this](const std::shared_ptr<SetInt32::Request> request,
+                                         std::shared_ptr<SetInt32::Response> response) {
+        setDisparityRangeModeCallback(request, response);
+      });
+  set_disparity_search_offset_srv_ = node_->create_service<SetInt32>(
+      camera_name_ + "/" + "set_disparity_search_offset", [this](const std::shared_ptr<SetInt32::Request> request,
+                                            std::shared_ptr<SetInt32::Response> response) {
+        setDisparitySearchOffsetCallback(request, response);
+      });
   change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
       camera_name_ + "/" + "change_state", std::bind(&OBCameraNode::handleChangeStateRequest, this,
                               std::placeholders::_1, std::placeholders::_2));
   get_state_srv_ = node_->create_service<lifecycle_msgs::srv::GetState>(
       camera_name_ + "/" + "get_state", std::bind(&OBCameraNode::handleGetStateRequest, this,
                               std::placeholders::_1, std::placeholders::_2));
+
 
 }
 
@@ -315,13 +369,146 @@ void OBCameraNode::setPointCloudDecimationCallback(
   try {
     point_cloud_decimation_filter_factor_ = request->data;
     RCLCPP_INFO_STREAM(logger_, "Set point_cloud_decimation_filter_factor to "
-                                << point_cloud_decimation_filter_factor_);
+                                    << point_cloud_decimation_filter_factor_);
     response->success = true;
     response->message = "Point cloud decimation factor updated successfully";
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     response->success = false;
     response->message = std::string("Failed to set decimation factor: ") + e.what();
     RCLCPP_ERROR_STREAM(logger_, response->message);
+  }
+}
+
+void OBCameraNode::setDisparityRangeModeCallback(const std::shared_ptr<SetInt32::Request>& request,
+                                                 std::shared_ptr<SetInt32::Response>& response) {
+  if (!request) {
+    response->success = false;
+    response->message = "Invalid request";
+    return;
+  }
+
+  try {
+    if (!device_->isPropertySupported(OB_PROP_DISP_SEARCH_RANGE_MODE_INT, OB_PERMISSION_WRITE)) {
+      response->success = false;
+      response->message = "Current device does not support disparity range mode";
+      return;
+    }
+
+    const bool allow_set = isGemini435LePID(pid_) || enable_stream_[DEPTH];
+    if (!allow_set) {
+      response->success = false;
+      response->message = "Disparity range mode can only be set when depth stream is enabled";
+      return;
+    }
+
+    if (isGemini330SeriesForDisparity(pid_) &&
+        !isSupportedDisparityResolutionForPid(pid_, width_[DEPTH], height_[DEPTH])) {
+      response->success = false;
+      response->message = "Current depth resolution " + std::to_string(width_[DEPTH]) + "x" +
+                          std::to_string(height_[DEPTH]) + " is not supported. " +
+                          getDisparityResolutionHintByPid(pid_);
+      return;
+    }
+
+    auto range = device_->getIntPropertyRange(OB_PROP_DISP_SEARCH_RANGE_MODE_INT);
+    const int requested_mode_value = request->data;
+    int hw_mode_index = -1;
+    if (requested_mode_value == 64) {
+      hw_mode_index = 0;
+    } else if (requested_mode_value == 128) {
+      hw_mode_index = 1;
+    } else if (requested_mode_value == 256) {
+      hw_mode_index = 2;
+    }
+
+    if (hw_mode_index < range.min || hw_mode_index > range.max) {
+      response->success = false;
+      std::string supported_mode;
+      for (int i = range.min; i <= range.max; ++i) {
+        supported_mode += (i == 0)   ? "64"
+                          : (i == 1) ? "/128"
+                          : (i == 2) ? "/256"
+                                     : "/" + std::to_string(i);
+      }
+      response->message = "Invalid disparity range mode. Allowed values:" + supported_mode;
+      return;
+    }
+
+    device_->setIntProperty(OB_PROP_DISP_SEARCH_RANGE_MODE_INT, hw_mode_index);
+    auto current_mode_index = device_->getIntProperty(OB_PROP_DISP_SEARCH_RANGE_MODE_INT);
+    auto current_mode_value = (current_mode_index == 0)   ? 64
+                              : (current_mode_index == 1) ? 128
+                              : (current_mode_index == 2) ? 256
+                                                          : current_mode_index;
+    response->success = true;
+    response->message = "disparity_range_mode updated to " + std::to_string(current_mode_value);
+  } catch (const ob::Error& e) {
+    response->success = false;
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
+  } catch (const std::exception& e) {
+    response->success = false;
+    response->message = e.what();
+  } catch (...) {
+    response->success = false;
+    response->message = "unknown error";
+  }
+}
+
+void OBCameraNode::setDisparitySearchOffsetCallback(
+    const std::shared_ptr<SetInt32::Request>& request,
+    std::shared_ptr<SetInt32::Response>& response) {
+  if (!request) {
+    response->success = false;
+    response->message = "Invalid request";
+    return;
+  }
+
+  try {
+    if (!device_->isPropertySupported(OB_PROP_DISP_SEARCH_OFFSET_INT, OB_PERMISSION_WRITE)) {
+      response->success = false;
+      response->message = "Current device does not support disparity search offset";
+      return;
+    }
+
+    const bool allow_set = isGemini435LePID(pid_) || enable_stream_[DEPTH];
+    if (!allow_set) {
+      response->success = false;
+      response->message = "Disparity search offset can only be set when depth stream is enabled";
+      return;
+    }
+
+    if (isGemini330SeriesForDisparity(pid_) &&
+        !isSupportedDisparityResolutionForPid(pid_, width_[DEPTH], height_[DEPTH])) {
+      response->success = false;
+      response->message = "Current depth resolution " + std::to_string(width_[DEPTH]) + "x" +
+                          std::to_string(height_[DEPTH]) + " is not supported. " +
+                          getDisparityResolutionHintByPid(pid_);
+      return;
+    }
+
+    auto range = device_->getIntPropertyRange(OB_PROP_DISP_SEARCH_OFFSET_INT);
+    if (request->data < range.min || request->data > range.max) {
+      response->success = false;
+      response->message =
+          "Invalid disparity search offset. Allowed values:" + std::to_string(range.min) + " to " +
+          std::to_string(range.max);
+      return;
+    }
+
+    device_->setIntProperty(OB_PROP_DISP_SEARCH_OFFSET_INT, request->data);
+    auto current_offset = device_->getIntProperty(OB_PROP_DISP_SEARCH_OFFSET_INT);
+    RCLCPP_INFO_STREAM(logger_, "Set disparity_search_offset to " << current_offset);
+    response->success = true;
+    response->message = "disparity_search_offset updated to " + std::to_string(current_offset);
+  } catch (const ob::Error& e) {
+    response->success = false;
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
+  } catch (const std::exception& e) {
+    response->success = false;
+    response->message = e.what();
+  } catch (...) {
+    response->success = false;
+    response->message = "unknown error";
   }
 }
 
@@ -340,7 +527,7 @@ void OBCameraNode::setStreamsEnableCallback(
     }
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -378,6 +565,8 @@ void OBCameraNode::setExposureCallback(const std::shared_ptr<SetInt32::Request>&
         device_->setIntProperty(OB_PROP_DEPTH_EXPOSURE_INT, request->data);
         break;
       case OB_STREAM_COLOR:
+      case OB_STREAM_COLOR_LEFT:
+      case OB_STREAM_COLOR_RIGHT:
         device_->setIntProperty(OB_PROP_COLOR_EXPOSURE_INT, request->data);
         break;
       default:
@@ -387,7 +576,7 @@ void OBCameraNode::setExposureCallback(const std::shared_ptr<SetInt32::Request>&
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -414,6 +603,8 @@ void OBCameraNode::getGainCallback(const std::shared_ptr<GetInt32::Request>& req
         response->data = device_->getIntProperty(OB_PROP_DEPTH_GAIN_INT);
         break;
       case OB_STREAM_COLOR:
+      case OB_STREAM_COLOR_LEFT:
+      case OB_STREAM_COLOR_RIGHT:
         response->data = device_->getIntProperty(OB_PROP_COLOR_GAIN_INT);
         break;
       default:
@@ -423,7 +614,7 @@ void OBCameraNode::getGainCallback(const std::shared_ptr<GetInt32::Request>& req
     response->success = true;
   } catch (ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -449,6 +640,8 @@ void OBCameraNode::setGainCallback(const std::shared_ptr<SetInt32 ::Request>& re
         prop_id = OB_PROP_DEPTH_GAIN_INT;
         break;
       case OB_STREAM_COLOR:
+      case OB_STREAM_COLOR_LEFT:
+      case OB_STREAM_COLOR_RIGHT:
         prop_id = OB_PROP_COLOR_GAIN_INT;
         break;
       default:
@@ -460,7 +653,7 @@ void OBCameraNode::setGainCallback(const std::shared_ptr<SetInt32 ::Request>& re
     auto range = device_->getIntPropertyRange(prop_id);
     if (request->data < range.min || request->data > range.max) {
       response->success = false;
-      RCLCPP_INFO_STREAM(logger_, "set gain value out of range");
+      RCLCPP_WARN_STREAM(logger_, "Gain value is out of range");
       response->message = "value out of range";
       return;
     }
@@ -468,7 +661,7 @@ void OBCameraNode::setGainCallback(const std::shared_ptr<SetInt32 ::Request>& re
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -482,6 +675,19 @@ void OBCameraNode::setAeRoiCallback(const std::shared_ptr<SetArrays ::Request>& 
                                     std::shared_ptr<SetArrays::Response>& response,
                                     const stream_index_pair& stream_index) {
   auto stream = stream_index.first;
+  if (isGemini305SeriesPID(device_->getDeviceInfo()->getPid()) &&
+      (stream != OB_STREAM_COLOR && ae_reference_stream_ == "color")) {
+    response->success = false;
+    response->message = "AE Reference Stream is color, other sensors setting is not supported";
+    return;
+  }
+  if (isGemini305SeriesPID(device_->getDeviceInfo()->getPid()) &&
+      (stream != OB_STREAM_DEPTH && ae_reference_stream_ == "depth")) {
+    response->success = false;
+    response->message =
+        "AE Reference Stream is depth, other sensors sensor setting is not supported";
+    return;
+  }
   auto config = OBRegionOfInterest();
   uint32_t data_size = sizeof(config);
   try {
@@ -519,11 +725,13 @@ void OBCameraNode::setAeRoiCallback(const std::shared_ptr<SetArrays ::Request>& 
         device_->getStructuredData(OB_STRUCT_DEPTH_AE_ROI, reinterpret_cast<uint8_t*>(&config),
                                    &data_size);
         RCLCPP_INFO_STREAM(
-            logger_, "set depth AE ROI : "
+            logger_, "Set depth AE ROI to "
                          << "[Left: " << config.x0_left << ", Right: " << config.x1_right
-                         << ", Top: " << config.y0_top << ", Bottom: " << config.y1_bottom << " ]");
+                         << ", Top: " << config.y0_top << ", Bottom: " << config.y1_bottom << "]");
         break;
       case OB_STREAM_COLOR:
+      case OB_STREAM_COLOR_LEFT:
+      case OB_STREAM_COLOR_RIGHT:
         config.x0_left = (static_cast<short int>(request->data_param[0]) < 0)
                              ? 0
                              : static_cast<short int>(request->data_param[0]);
@@ -553,9 +761,9 @@ void OBCameraNode::setAeRoiCallback(const std::shared_ptr<SetArrays ::Request>& 
         device_->getStructuredData(OB_STRUCT_COLOR_AE_ROI, reinterpret_cast<uint8_t*>(&config),
                                    &data_size);
         RCLCPP_INFO_STREAM(
-            logger_, "set color AE ROI : "
+            logger_, "Set color AE ROI to "
                          << "[Left: " << config.x0_left << ", Right: " << config.x1_right
-                         << ", Top: " << config.y0_top << ", Bottom: " << config.y1_bottom << " ]");
+                         << ", Top: " << config.y0_top << ", Bottom: " << config.y1_bottom << "]");
         break;
       default:
         RCLCPP_ERROR(logger_, "%s NOT a video stream", __FUNCTION__);
@@ -566,7 +774,7 @@ void OBCameraNode::setAeRoiCallback(const std::shared_ptr<SetArrays ::Request>& 
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -584,7 +792,7 @@ void OBCameraNode::getWhiteBalanceCallback(const std::shared_ptr<GetInt32::Reque
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -600,13 +808,13 @@ void OBCameraNode::setWhiteBalanceCallback(const std::shared_ptr<SetInt32 ::Requ
     auto range = device_->getIntPropertyRange(OB_PROP_COLOR_WHITE_BALANCE_INT);
     if (request->data < range.min || request->data > range.max) {
       response->success = false;
-      RCLCPP_INFO_STREAM(logger_, "set white balance value out of range");
+      RCLCPP_WARN_STREAM(logger_, "White balance value is out of range");
       response->message = "value out of range";
       return;
     }
     bool auto_white_balance = device_->getBoolProperty(OB_PROP_COLOR_AUTO_WHITE_BALANCE_BOOL);
     if (auto_white_balance) {
-      RCLCPP_WARN(logger_, "auto white balance is enabled, set white balance will be ignored");
+      RCLCPP_WARN(logger_, "Auto white balance is enabled, set white balance will be ignored");
       response->success = false;
       response->message = "auto white balance is enabled";
       return;
@@ -614,7 +822,7 @@ void OBCameraNode::setWhiteBalanceCallback(const std::shared_ptr<SetInt32 ::Requ
     device_->setIntProperty(OB_PROP_COLOR_WHITE_BALANCE_INT, request->data);
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->message = e.what();
     response->success = false;
@@ -632,7 +840,7 @@ void OBCameraNode::getAutoWhiteBalanceCallback(const std::shared_ptr<GetInt32::R
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->message = e.what();
   } catch (...) {
@@ -648,7 +856,7 @@ void OBCameraNode::setAutoWhiteBalanceCallback(const std::shared_ptr<SetBool::Re
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->message = e.what();
   } catch (...) {
@@ -674,6 +882,8 @@ void OBCameraNode::setAutoExposureCallback(
         prop_id = OB_PROP_DEPTH_AUTO_EXPOSURE_BOOL;
         break;
       case OB_STREAM_COLOR:
+      case OB_STREAM_COLOR_LEFT:
+      case OB_STREAM_COLOR_RIGHT:
         prop_id = OB_PROP_COLOR_AUTO_EXPOSURE_BOOL;
         break;
       default:
@@ -685,7 +895,7 @@ void OBCameraNode::setAutoExposureCallback(
     auto range = device_->getIntPropertyRange(prop_id);
     if (request->data < range.min || request->data > range.max) {
       response->success = false;
-      RCLCPP_INFO_STREAM(logger_, "set auto exposure value out of range");
+      RCLCPP_WARN_STREAM(logger_, "Auto exposure value is out of range");
       response->message = "value out of range";
       return;
     }
@@ -693,7 +903,7 @@ void OBCameraNode::setAutoExposureCallback(
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->message = e.what();
   } catch (...) {
@@ -711,7 +921,7 @@ void OBCameraNode::setFanWorkModeCallback(const std::shared_ptr<SetInt32::Reques
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -733,7 +943,7 @@ void OBCameraNode::setFloorEnableCallback(
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -758,7 +968,7 @@ void OBCameraNode::setLaserEnableCallback(
     }
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -794,7 +1004,7 @@ void OBCameraNode::setLdpEnableCallback(
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -820,6 +1030,8 @@ void OBCameraNode::getExposureCallback(const std::shared_ptr<GetInt32::Request>&
         response->data = device_->getIntProperty(OB_PROP_DEPTH_EXPOSURE_INT);
         break;
       case OB_STREAM_COLOR:
+      case OB_STREAM_COLOR_LEFT:
+      case OB_STREAM_COLOR_RIGHT:
         response->data = device_->getIntProperty(OB_PROP_COLOR_EXPOSURE_INT);
         break;
       default:
@@ -828,7 +1040,7 @@ void OBCameraNode::getExposureCallback(const std::shared_ptr<GetInt32::Request>&
     }
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -853,7 +1065,7 @@ void OBCameraNode::getDeviceInfoCallback(const std::shared_ptr<GetDeviceInfo::Re
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -877,7 +1089,7 @@ void OBCameraNode::getSDKVersion(const std::shared_ptr<GetString::Request>& requ
     response->success = true;
   } catch (const ob::Error& e) {
     response->success = false;
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
   } catch (const std::exception& e) {
     response->success = false;
     response->message = e.what();
@@ -907,13 +1119,19 @@ void OBCameraNode::setMirrorCallback(const std::shared_ptr<SetBool::Request>& re
       case OB_STREAM_COLOR:
         device_->setBoolProperty(OB_PROP_COLOR_MIRROR_BOOL, request->data);
         break;
+      case OB_STREAM_COLOR_LEFT:
+        device_->setBoolProperty(OB_PROP_COLOR_LEFT_MIRROR_BOOL, request->data);
+        break;
+      case OB_STREAM_COLOR_RIGHT:
+        device_->setBoolProperty(OB_PROP_COLOR_RIGHT_MIRROR_BOOL, request->data);
+        break;
       default:
         RCLCPP_ERROR(logger_, " %s NOT a video stream", __FUNCTION__);
         break;
     }
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -946,13 +1164,19 @@ void OBCameraNode::setFlipCallback(const std::shared_ptr<SetBool::Request>& requ
       case OB_STREAM_COLOR:
         device_->setBoolProperty(OB_PROP_COLOR_FLIP_BOOL, request->data);
         break;
+      case OB_STREAM_COLOR_LEFT:
+        device_->setBoolProperty(OB_PROP_COLOR_LEFT_FLIP_BOOL, request->data);
+        break;
+      case OB_STREAM_COLOR_RIGHT:
+        device_->setBoolProperty(OB_PROP_COLOR_RIGHT_FLIP_BOOL, request->data);
+        break;
       default:
         RCLCPP_ERROR(logger_, " %s NOT a video stream", __FUNCTION__);
         break;
     }
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -985,13 +1209,19 @@ void OBCameraNode::setRotationCallback(const std::shared_ptr<SetInt32::Request>&
       case OB_STREAM_COLOR:
         device_->setIntProperty(OB_PROP_COLOR_ROTATE_INT, request->data);
         break;
+      case OB_STREAM_COLOR_LEFT:
+        device_->setIntProperty(OB_PROP_COLOR_LEFT_ROTATE_INT, request->data);
+        break;
+      case OB_STREAM_COLOR_RIGHT:
+        device_->setIntProperty(OB_PROP_COLOR_RIGHT_ROTATE_INT, request->data);
+        break;
       default:
         RCLCPP_ERROR(logger_, " %s NOT a video stream", __FUNCTION__);
         break;
     }
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1009,7 +1239,74 @@ void OBCameraNode::getLdpStatusCallback(const std::shared_ptr<GetBool::Request>&
     response->data = device_->getBoolProperty(OB_PROP_LDP_STATUS_BOOL);
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
+    response->success = false;
+  } catch (const std::exception& e) {
+    response->message = e.what();
+    response->success = false;
+  } catch (...) {
+    response->message = "unknown error";
+    response->success = false;
+  }
+}
+
+void OBCameraNode::getLaserStatusCallback(const std::shared_ptr<GetBool::Request>& request,
+                                          std::shared_ptr<GetBool::Response>& response) {
+  (void)request;
+  try {
+    if (device_->isPropertySupported(OB_PROP_LASER_CONTROL_INT, OB_PERMISSION_READ_WRITE)) {
+      response->data = device_->getBoolProperty(OB_PROP_LASER_CONTROL_INT);
+    } else if (device_->isPropertySupported(OB_PROP_LASER_BOOL, OB_PERMISSION_READ_WRITE)) {
+      response->data = device_->getBoolProperty(OB_PROP_LASER_BOOL);
+    }
+    response->success = true;
+  } catch (const ob::Error& e) {
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
+    response->success = false;
+  } catch (const std::exception& e) {
+    response->message = e.what();
+    response->success = false;
+  } catch (...) {
+    response->message = "unknown error";
+    response->success = false;
+  }
+}
+
+void OBCameraNode::setPtpConfigCallback(
+    const std::shared_ptr<rmw_request_id_t>& request_header,
+    const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
+    std::shared_ptr<std_srvs::srv::SetBool::Response>& response) {
+  (void)request_header;
+
+  try {
+    if (!device_->isPropertySupported(OB_DEVICE_PTP_CLOCK_SYNC_ENABLE_BOOL,
+                                      OB_PERMISSION_READ_WRITE)) {
+      response->success = false;
+      RCLCPP_ERROR(logger_, "PTP clock sync property is not supported or not writable");
+      return;
+    }
+    device_->setBoolProperty(OB_DEVICE_PTP_CLOCK_SYNC_ENABLE_BOOL, request->data);
+    response->success = true;
+  } catch (const ob::Error& e) {
+    response->success = false;
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
+  } catch (const std::exception& e) {
+    response->success = false;
+    response->message = e.what();
+  } catch (...) {
+    response->success = false;
+    response->message = "unknown error";
+  }
+}
+
+void OBCameraNode::getPtpConfigCallback(const std::shared_ptr<GetBool::Request>& request,
+                                        std::shared_ptr<GetBool::Response>& response) {
+  (void)request;
+  try {
+    response->data = device_->getBoolProperty(OB_DEVICE_PTP_CLOCK_SYNC_ENABLE_BOOL);
+    response->success = true;
+  } catch (const ob::Error& e) {
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1094,7 +1391,7 @@ void OBCameraNode::getLrmMeasureDistanceCallback(const std::shared_ptr<GetInt32:
     response->data = device_->getIntProperty(OB_PROP_LDP_MEASURE_DISTANCE_INT);
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1111,18 +1408,19 @@ void OBCameraNode::toggleSensorCallback(const std::shared_ptr<SetBool::Request>&
   std::string msg;
   if (request->data) {
     if (enable_stream_[stream_index]) {
-      msg = stream_name_[stream_index] + " Already ON";
+      msg = stream_name_[stream_index] + " is already enabled";
     }
-    RCLCPP_INFO_STREAM(logger_, "toggling sensor " << stream_name_[stream_index] << " ON");
+    RCLCPP_INFO_STREAM(logger_, "Request to set sensor " << stream_name_[stream_index] << " to ON");
 
   } else {
     if (!enable_stream_[stream_index]) {
-      msg = stream_name_[stream_index] + " Already OFF";
+      msg = stream_name_[stream_index] + " is already disabled";
     }
-    RCLCPP_INFO_STREAM(logger_, "toggling sensor " << stream_name_[stream_index] << " OFF");
+    RCLCPP_INFO_STREAM(logger_,
+                       "Request to set sensor " << stream_name_[stream_index] << " to OFF");
   }
   if (!msg.empty()) {
-    RCLCPP_ERROR_STREAM(logger_, msg);
+    RCLCPP_WARN_STREAM(logger_, msg);
     response->success = true;
     response->message = msg;
     return;
@@ -1140,7 +1438,7 @@ bool OBCameraNode::toggleSensor(const stream_index_pair& stream_index, bool enab
     startStreams();
     return true;
   } catch (const ob::Error& e) {
-    msg = e.getMessage();
+    msg = orbbec_camera::formatObErrorWithStatus(e);
     return false;
   } catch (const std::exception& e) {
     msg = e.what();
@@ -1189,7 +1487,7 @@ void OBCameraNode::switchIRCameraCallback(const std::shared_ptr<SetString::Reque
     response->success = true;
     return;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1206,7 +1504,7 @@ void OBCameraNode::setIRLongExposureCallback(
     device_->setBoolProperty(OB_PROP_IR_LONG_EXPOSURE_BOOL, request->data);
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1226,7 +1524,7 @@ void OBCameraNode::setRESETTimestampCallback(
     device_->setBoolProperty(OB_PROP_TIMER_RESET_SIGNAL_BOOL, true);
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1244,7 +1542,7 @@ void OBCameraNode::setSYNCInterleaveLaserCallback(
     device_->setIntProperty(OB_PROP_FRAME_INTERLEAVE_LASER_PATTERN_SYNC_DELAY_INT, request->data);
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1262,7 +1560,7 @@ void OBCameraNode::setSYNCHostimeCallback(
     device_->timerSyncWithHost();
     response->success = true;
   } catch (const ob::Error& e) {
-    response->message = e.getMessage();
+    response->message = orbbec_camera::formatObErrorWithStatus(e);
     response->success = false;
   } catch (const std::exception& e) {
     response->message = e.what();
@@ -1528,6 +1826,42 @@ void OBCameraNode::getUserCalibParamsCallback(
     for (size_t i = 0; i < 3; ++i) ss >> response->translation[i];
     response->success = true;
     response->message = "read success";
+  } catch (...) {
+    response->success = false;
+    response->message = "exception occurred";
+  }
+}
+void OBCameraNode::setAEReferenceStreamCallback(const std::shared_ptr<SetString::Request>& request,
+                                                std::shared_ptr<SetString::Response>& response) {
+  try {
+    if (device_->isPropertySupported(OB_PROP_DEVICE_AE_REFERENCE_INT, OB_PERMISSION_WRITE) &&
+        (request->data == "depth" || request->data == "color")) {
+      device_->setIntProperty(OB_PROP_DEVICE_AE_REFERENCE_INT, request->data == "depth" ? 0 : 1);
+      ae_reference_stream_ = request->data;
+      response->success = true;
+      response->message = "set AE reference stream success";
+    } else {
+      response->success = false;
+      response->message = "set AE reference stream failed";
+    }
+  } catch (...) {
+    response->success = false;
+    response->message = "exception occurred";
+  }
+}
+void OBCameraNode::setAEStrategyCallback(const std::shared_ptr<SetString::Request>& request,
+                                         std::shared_ptr<SetString::Response>& response) {
+  try {
+    if (device_->isPropertySupported(OB_PROP_DEVICE_AE_STRATEGY_INT, OB_PERMISSION_WRITE) &&
+        (request->data == "default" || request->data == "motion")) {
+      device_->setIntProperty(OB_PROP_DEVICE_AE_STRATEGY_INT, request->data == "motion" ? 1 : 0);
+      ae_strategy_ = request->data;
+      response->success = true;
+      response->message = "set AE strategy success";
+    } else {
+      response->success = false;
+      response->message = "set AE strategy failed";
+    }
   } catch (...) {
     response->success = false;
     response->message = "exception occurred";

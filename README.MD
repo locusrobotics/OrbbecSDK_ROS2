@@ -26,6 +26,28 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
   </thead>
   <tbody>
       <tr>
+      <td rowspan="2" style="text-align: center; font-weight: bold;">Gemini 305</td>
+      <td>Gemini 305</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 305G</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td rowspan="2" style="text-align: center; font-weight: bold;">Gemini 340</td>
+      <td>Gemini 345</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 345Lg</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+      <tr>
       <td style="text-align: center; font-weight: bold;">Gemini 435Le</td>
       <td>Gemini 435Le</td>
       <td>not supported</td>
@@ -150,7 +172,7 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
   </tbody>
 </table>
 
-**Note**: If you do not find your device, please contact our FAE or sales representative for help.
+**Note**: Lidar devices are supported in v2.6.3 and later versions.For usage details, please refer to [Document](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/lidar_devices/index.html).If you do not find your device, please contact our FAE or sales representative for help.
 
 **Definition**:
 
@@ -162,7 +184,7 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
 
 **Migration Guide**
 
-If you need to migrate existing projects from the main (v1.x) branch to the v2-main (v2.x) branch, please refer to the official [migration guide](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/7_developer_guide/migration_guide.html)
+If you need to migrate existing projects from the main (v1.x) branch to the v2-main (v2.x) branch, please refer to the official [migration guide](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/camera_devices/7_developer_guide/migration_guide.html)
 
 ## Installation Instructions
 
@@ -179,7 +201,7 @@ sudo apt install libgflags-dev nlohmann-json3-dev \
 ros-$ROS_DISTRO-image-transport ros-${ROS_DISTRO}-image-transport-plugins ros-${ROS_DISTRO}-compressed-image-transport \
 ros-$ROS_DISTRO-image-publisher ros-$ROS_DISTRO-camera-info-manager \
 ros-$ROS_DISTRO-diagnostic-updater ros-$ROS_DISTRO-diagnostic-msgs ros-$ROS_DISTRO-statistics-msgs ros-$ROS_DISTRO-xacro \
-ros-$ROS_DISTRO-backward-ros libdw-dev libssl-dev mesa-utils libgl1
+ros-$ROS_DISTRO-backward-ros libdw-dev libssl-dev mesa-utils libgl1 libgoogle-glog-dev
 ```
 
 Enable ROS 2 auto-completion:
@@ -294,7 +316,7 @@ ros2 topic echo /camera/depth/camera_info
 ros2 service call /camera/get_sdk_version orbbec_camera_msgs/srv/GetString '{}'
 ```
 
-For more usage details, please refer to the official [OrbbecSDK ROS2 documentation](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/4_application_guide/application_guide.html)
+For more usage details, please refer to the official [OrbbecSDK ROS2 documentation](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/camera_devices/4_application_guide/application_guide.html)
 
 ## Supported Devices
 
@@ -304,6 +326,8 @@ For optimal performance, we strongly recommend updating to the latest firmware v
 
 | **Products List** | **Recommended FW Version**                                                             | Launch File                 |
 | ----------------------- | -------------------------------------------------------------------------------------------- | --------------------------- |
+| Gemini 305              | [1.0.30](https://doc.orbbec.com/documentation/Gemini%20305%20Series%20Documentation/Firmware%20Release%20of%20Gemini%20305)                  | gemini305.launch.py             |
+| Gemini 305G             | [1.0.30](https://doc.orbbec.com/documentation/Gemini%20305%20Documentation/Firmware%20Release%20of%20Gemini%20305)                  | gemini305_g.launch.py           |
 | Astra Mini Pro          | [2.0.03](https://github.com/orbbec/OrbbecFirmware/releases/tag/Astra-Mini-Pro)                  | astra.launch.py             |
 | Astra Mini S Pro        | [2.0.03](https://github.com/orbbec/OrbbecFirmware/releases/tag/Astra-Mini-S-Pro)                | astra.launch.py             |
 | Gemini 435Le            | [1.3.6](https://github.com/orbbec/OrbbecFirmware/releases/tag/Gemin435Le-Firmware)              | gemini435_le.launch.py      |
@@ -312,10 +336,12 @@ For optimal performance, we strongly recommend updating to the latest firmware v
 | Gemini 210              | [1.0.9](https://github.com/orbbec/OrbbecFirmware/releases/tag/Gemini210-Firmware)               | gemini210.launch.py         |
 | Gemini 2                | [1.4.98](https://github.com/orbbec/OrbbecFirmware/releases/tag/Gemini2-Firmware)                | gemini2.launch.py           |
 | Gemini 2 L              | [1.5.2](https://github.com/orbbec/OrbbecFirmware/releases/tag/Gemini2L-Firmware)                | gemini2L.launch.py          |
-| Femto Bolt              | [1.1.2](https://github.com/orbbec/OrbbecFirmware/releases/tag/Femto-Bolt-Firmware)              | femto_bolt.launch.py        |
+| Femto Bolt              | [1.1.3](https://github.com/orbbec/OrbbecFirmware/releases/tag/Femto-Bolt-Firmware)              | femto_bolt.launch.py        |
 | Femto Mega              | [1.3.1](https://github.com/orbbec/OrbbecFirmware/releases/tag/Femto-Mega-Firmware)              | femto_mega.launch.py        |
 | Femto Mega I            | [2.0.4](https://github.com/orbbec/OrbbecFirmware/releases/tag/Femto-Mega-I-Firmware)            | femto_mega.launch.py        |
 | Astra 2                 | [2.8.20](https://orbbec-debian-repos-aws.s3.amazonaws.com/product/Astra2_Release_2.8.20.zip)    | astra2.launch.py            |
+| Gemini 345            | 1.9.03 | gemini345.launch.py |
+| Gemini 345Lg            | 1.9.03 | gemini345_lg.launch.py |
 | Pulsar SL450            | 2.2.4.5 | lidar.launch.py |
 | Pulsar ME450            | 1.0.0.6 | lidar.launch.py |
 
@@ -324,7 +350,7 @@ for different models within the same series. Differences in USB standards, such 
 
 ## Tutorial
 
-please refer to the official [OrbbecSDK ROS2 documentation](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/5_advanced_guide/advanced_guide.html)
+please refer to the official [OrbbecSDK ROS2 documentation](https://orbbec.github.io/OrbbecSDK_ROS2/en/source/camera_devices/5_advanced_guide/advanced_guide.html)
 
 ## Examples
 

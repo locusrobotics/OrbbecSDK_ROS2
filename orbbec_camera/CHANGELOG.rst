@@ -71,6 +71,8 @@ Changelog for package orbbec_camera
 * Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
 * Contributors: Sushant Raj
 
+Forthcoming
+-----------
 * Update OrbbecSDK to v2.5.5
 * add new launch files and benchmark tools
 * Add new features: forceIp, ISP denoising, extrinsic control, etc.

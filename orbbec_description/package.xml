@@ -4,7 +4,7 @@
   <name>orbbec_description</name>
   <version>999.9.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="jian.dong@pobox.com">toosimple</maintainer>
+  <maintainer email="yalian@orbbec.com">yalian</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

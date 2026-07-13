@@ -2,6 +2,11 @@
 Changelog for package orbbec_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
+* Contributors: Bence Magyar
+
 999.9.0 (2026-07-10)
 --------------------
 
@@ -52,8 +57,6 @@ Changelog for package orbbec_description
 --------------------
 * Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
 * Contributors: Sushant Raj
-Forthcoming
------------
 
 2.4.7 (2025-09-01)
 ------------------

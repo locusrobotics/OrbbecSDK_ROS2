@@ -4,7 +4,7 @@
   <name>orbbec_camera</name>
   <version>999.9.0</version>
   <description>Orbbec Camera package</description>
-  <maintainer email="mocun@orbbec.com">Joe Dong</maintainer>
+  <maintainer email="yalian@orbbec.com">yalian</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

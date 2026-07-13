@@ -20,6 +20,7 @@ def generate_launch_description():
         DeclareLaunchArgument('vendor_id', default_value='0x2bc5'),
         DeclareLaunchArgument('product_id', default_value=''),
         DeclareLaunchArgument('enable_point_cloud', default_value='true'),
+        DeclareLaunchArgument('point_cloud_decimation_filter_factor', default_value='1'),
         DeclareLaunchArgument('enable_colored_point_cloud', default_value='false'),
         DeclareLaunchArgument('cloud_frame_id', default_value=''),
         DeclareLaunchArgument('point_cloud_qos', default_value='default'),
@@ -72,10 +73,15 @@ def generate_launch_description():
         DeclareLaunchArgument('enable_soft_filter', default_value='true'),
         DeclareLaunchArgument('soft_filter_max_diff', default_value='-1'),
         DeclareLaunchArgument('soft_filter_speckle_size', default_value='-1'),
+        DeclareLaunchArgument('enable_mgc_noise_removal_filter', default_value='false'),
+        DeclareLaunchArgument('enable_lut_noise_removal_filter', default_value='false'),
         DeclareLaunchArgument('use_hardware_time', default_value='false'),
+        DeclareLaunchArgument('enable_frame_timestamp_csv', default_value='false'),
+        DeclareLaunchArgument('frame_timestamp_csv_file', default_value=''),
         DeclareLaunchArgument('align_mode', default_value='HW'),
         DeclareLaunchArgument('laser_energy_level', default_value='-1'),
         DeclareLaunchArgument('enable_heartbeat', default_value='false'),
+        DeclareLaunchArgument('enable_firmware_log', default_value='false'),
     ]
 
     # Node configuration
@@ -92,7 +98,7 @@ def generate_launch_description():
                     name="ob_camera_node",
                     namespace=LaunchConfiguration("camera_name"),
                     parameters=parameters,
-                    output="screen",
+                    output="log",
                 )
             ]
         )
@@ -115,7 +121,7 @@ def generate_launch_description():
             composable_node_descriptions=[
                 compose_node,
             ],
-            output="screen",
+            output="log",
         )
         # Launch description
         ld = LaunchDescription(

@@ -34,8 +34,8 @@ Changelog for package orbbec_camera_msgs
 * Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
 * Contributors: Sushant Raj
 
-Forthcoming
------------
+999.10.0 (2026-07-13)
+---------------------
 * [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
   - Merges upstream `orbbec/OrbbecSDK_ROS2` release tag `v2.8.6` into
   `locus` (single merge commit); bumps the vendored SDK to 2.8.6.

@@ -319,16 +319,30 @@ void OBCameraNodeDriver::init() {
   device_access_mode_ = stringToAccessMode(device_access_mode_str_);
   RCLCPP_INFO_STREAM(logger_, "Device access mode: " << device_access_mode_str_ << " ("
                                                      << device_access_mode_ << ")");
-  if (uvc_backend_ == "libuvc") {
-    ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
-    RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
-  } else if (uvc_backend_ == "v4l2") {
-    ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_V4L2);
-    RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
+  // Selecting a UVC backend reaches into the SDK's USB pal, which throws outright when
+  // libusb is unavailable (no /dev/bus/usb). Net devices stream over GVCP/RTSP and never
+  // touch UVC, so skip the call for them rather than take a fatal error for a setting the
+  // device will not use.
+  if (!net_device_ip_.empty()) {
+    RCLCPP_INFO_STREAM(logger_, "Net device at " << net_device_ip_
+                                                 << ", skipping UVC backend selection");
   } else {
-    ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
-    RCLCPP_WARN_STREAM(logger_,
-                       "Unsupported uvc_backend '" << uvc_backend_ << "', using default libuvc");
+    try {
+      if (uvc_backend_ == "libuvc") {
+        ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
+        RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
+      } else if (uvc_backend_ == "v4l2") {
+        ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_V4L2);
+        RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
+      } else {
+        ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
+        RCLCPP_WARN_STREAM(
+            logger_, "Unsupported uvc_backend '" << uvc_backend_ << "', using default libuvc");
+      }
+    } catch (const ob::Error &e) {
+      RCLCPP_WARN_STREAM(logger_, "Failed to set UVC backend, leaving the SDK default in place: "
+                                      << orbbec_camera::formatObErrorWithStatus(e));
+    }
   }
   ctx_->enableNetDeviceEnumeration(enumerate_net_device_);
   device_changed_callback_id_ = ctx_->registerDeviceChangedCallback(

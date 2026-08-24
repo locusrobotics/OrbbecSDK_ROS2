@@ -2,6 +2,14 @@
 Changelog for package orbbec_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+999.10.0 (2026-07-13)
+---------------------
+* [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
+* Contributors: Bence Magyar
+
+999.9.0 (2026-07-10)
+--------------------
+
 999.8.0 (2026-06-16)
 --------------------
 

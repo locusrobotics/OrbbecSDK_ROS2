@@ -48,8 +48,15 @@ void TriggerFailureMonitor::setTriggerCallback(TriggerCallback callback) {
   trigger_callback_ = callback;
 }
 
+void TriggerFailureMonitor::setFailureReportCallback(FailureReportCallback callback) {
+  failure_report_callback_ = callback;
+}
+
 void TriggerFailureMonitor::recordFailure() {
   consecutive_failures_++;
+  if (failure_report_callback_) {
+    failure_report_callback_();
+  }
 }
 
 void TriggerFailureMonitor::recordSuccess() {

@@ -125,6 +125,23 @@ public:
     }
 
     /**
+     * @brief Enable a video stream to be used in the pipeline with decimation configuration.
+     * @brief Will convert sensor type to stream type automatically.
+     *
+     * @param[in] sensorType The sensor type to be enabled.
+     * @param[in] decimationConfig The decimation configuration for this stream.
+     * @param[in] fps The video stream frame rate (default is OB_FPS_ANY, which selects the default frame rate).
+     * @param[in] format The video stream format (default is OB_FORMAT_ANY, which selects the default format).
+     */
+    void enableVideoStream(OBSensorType sensorType, OBHardwareDecimationConfig decimationConfig, uint32_t fps = OB_FPS_ANY,
+                           OBFormat format = OB_FORMAT_ANY) const {
+        auto      streamType = ob::TypeHelper::convertSensorTypeToStreamType(sensorType);
+        ob_error *error      = nullptr;
+        ob_config_enable_video_stream_by_decimation_config(impl_, streamType, decimationConfig, fps, format, &error);
+        Error::handle(&error);
+    }
+
+    /**
      * @brief Enable an accelerometer stream to be used in the pipeline.
      *
      * This function allows users to enable an accelerometer stream with customizable parameters.
@@ -272,8 +289,9 @@ public:
     typedef std::function<void(std::shared_ptr<FrameSet> frame)> FrameSetCallback;
 
 private:
-    ob_pipeline_t   *impl_;
-    FrameSetCallback callback_;
+    ob_pipeline_t                               *impl_;
+    FrameSetCallback                             callback_;
+    std::function<void(OBPipelineStatus status)> statusCallback_;
 
 public:
     /**
@@ -335,6 +353,13 @@ public:
     static void frameSetCallback(ob_frame_t *frameSet, void *userData) {
         auto pipeline = static_cast<Pipeline *>(userData);
         pipeline->callback_(std::make_shared<FrameSet>(frameSet));
+    }
+
+    static void healthMonitorCallback(ob_pipeline_status status, void *userData) {
+        auto pipeline = static_cast<Pipeline *>(userData);
+        if(pipeline->statusCallback_) {
+            pipeline->statusCallback_(status);
+        }
     }
 
     /**
@@ -434,6 +459,40 @@ public:
     void disableFrameSync() const {
         ob_error *error = nullptr;
         ob_pipeline_disable_frame_sync(impl_, &error);
+        Error::handle(&error);
+    }
+
+    /**
+     * @brief Get the current pipeline status observed during streaming.
+     *
+     * @return OBPipelineStatus The accumulated status since the last call or pipeline start. Status is reset after each call.
+     */
+    OBPipelineStatus getStatus() const {
+        ob_error        *error  = nullptr;
+        OBPipelineStatus status = ob_pipeline_get_status(impl_, &error);
+        Error::handle(&error);
+        return status;
+    }
+
+    /**
+     * @brief Enable pipeline health monitor with periodic status polling.
+     *
+     * @param[in] callback The callback function invoked when abnormal status is detected (from internal thread, avoid blocking).
+     * @param[in] intervalMs Polling interval in milliseconds (recommended: 3000-5000, default: 3000).
+     */
+    void enableHealthMonitor(std::function<void(OBPipelineStatus status)> callback, uint32_t intervalMs = 3000) {
+        statusCallback_ = callback;
+        ob_error *error = nullptr;
+        ob_pipeline_enable_health_monitor(impl_, &Pipeline::healthMonitorCallback, this, intervalMs, &error);
+        Error::handle(&error);
+    }
+
+    /**
+     * @brief Disable pipeline health monitor.
+     */
+    void disableHealthMonitor() const {
+        ob_error *error = nullptr;
+        ob_pipeline_disable_health_monitor(impl_, &error);
         Error::handle(&error);
     }
 

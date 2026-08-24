@@ -2,6 +2,9 @@
 Changelog for package orbbec_camera_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+999.9.0 (2026-07-10)
+--------------------
+
 999.8.0 (2026-06-16)
 --------------------
 
@@ -30,6 +33,22 @@ Changelog for package orbbec_camera_msgs
 --------------------
 * Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
 * Contributors: Sushant Raj
+
+999.10.0 (2026-07-13)
+---------------------
+* [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
+  - Merges upstream `orbbec/OrbbecSDK_ROS2` release tag `v2.8.6` into
+  `locus` (single merge commit); bumps the vendored SDK to 2.8.6.
+  - Preserves all Locus customizations (statsd trigger monitor, lifecycle
+  `/state` topic, service-trigger capture, service namespacing,
+  disconnect-event publisher, version-gated firmware update, configurable
+  SDK log path, required-component launch) while adopting upstream
+  refactors.
+  ---------
+  Co-authored-by: slz <shenlanzhou@orbbec.com>
+  Co-authored-by: ob-yalian <luotao2025@163.com>
+  Co-authored-by: Kotaro Yoshimoto <pythagora.yoshimoto@gmail.com>
+* Contributors: Bence Magyar
 
 * Add DeviceStatus.msg
 * Add GetUserCalibParams.srv

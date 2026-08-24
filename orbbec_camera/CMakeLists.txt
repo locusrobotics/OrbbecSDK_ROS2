@@ -12,7 +12,9 @@ option(USE_NV_HW_DECODER "Use Nvidia hardware decoder" OFF)
 option(INSTALL_UDEV_RULES "Install udev rule for Orbbec cameras" ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Werror -Wno-pedantic -Wno-array-bounds)
+    # ROS L (lyrical) deprecates the rmw_qos_profile_t QoS overloads (image_transport,
+    # rclcpp, ...) that this driver still uses; keep them as warnings, not errors.
+    add_compile_options(-Wall -Wextra -Werror -Wno-error=deprecated-declarations -Wno-pedantic -Wno-array-bounds)
 endif()
 
 # find dependencies
@@ -25,6 +27,7 @@ set(dependencies
     backward_ros
     camera_info_manager
     image_transport
+    message_filters
     image_publisher
     lifecycle_msgs
     OpenCV
@@ -49,6 +52,33 @@ set(dependencies
 foreach(dep IN LISTS dependencies)
     find_package(${dep} REQUIRED)
 endforeach()
+
+# ament_target_dependencies() was removed in ROS L (lyrical); link modern CMake
+# targets directly. Eigen3, OpenCV, Threads and yaml-cpp are linked via
+# COMMON_LIBRARIES; backward_ros injects itself on find_package.
+set(dependencies_targets
+    ament_index_cpp::ament_index_cpp
+    ${builtin_interfaces_TARGETS}
+    cv_bridge::cv_bridge
+    camera_info_manager::camera_info_manager
+    image_transport::image_transport
+    message_filters::message_filters
+    ${lifecycle_msgs_TARGETS}
+    ${orbbec_camera_msgs_TARGETS}
+    rclcpp::rclcpp
+    rclcpp_components::component
+    ${sensor_msgs_TARGETS}
+    ${std_msgs_TARGETS}
+    ${std_srvs_TARGETS}
+    tf2::tf2
+    ${tf2_msgs_TARGETS}
+    tf2_ros::tf2_ros
+    tf2_sensor_msgs::tf2_sensor_msgs
+    diagnostic_updater::diagnostic_updater
+    ${diagnostic_msgs_TARGETS}
+    ${statistics_msgs_TARGETS}
+    camera_calibration_parsers::camera_calibration_parsers
+)
 
 find_package(PkgConfig REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -173,13 +203,13 @@ macro(add_orbbec_executable TARGET SOURCE)
     add_executable(${TARGET} ${SOURCE})
     target_include_directories(${TARGET} PUBLIC ${COMMON_INCLUDE_DIRS})
     target_link_libraries(${TARGET} ${COMMON_LIBRARIES} ${PROJECT_NAME})
-    ament_target_dependencies(${TARGET} ${dependencies})
+    target_link_libraries(${TARGET} ${dependencies_targets})
 endmacro()
 
 # Define library and nodes
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 
-ament_target_dependencies(${PROJECT_NAME} ${dependencies})
+target_link_libraries(${PROJECT_NAME} ${dependencies_targets})
 target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 
@@ -209,14 +239,14 @@ install(
 add_library(frame_latency SHARED tools/frame_latency.cpp)
 target_include_directories(frame_latency PUBLIC ${COMMON_INCLUDE_DIRS})
 target_link_libraries(frame_latency ${COMMON_LIBRARIES})
-ament_target_dependencies(frame_latency ${dependencies})
+target_link_libraries(frame_latency ${dependencies_targets})
 
 rclcpp_components_register_node(frame_latency PLUGIN "orbbec_camera::FrameLatencyNode" EXECUTABLE frame_latency_node)
 
 add_library(start_benchmark SHARED tools/start_benchmark.cpp)
 target_include_directories(start_benchmark PUBLIC ${COMMON_INCLUDE_DIRS})
 target_link_libraries(start_benchmark ${COMMON_LIBRARIES})
-ament_target_dependencies(start_benchmark ${dependencies})
+target_link_libraries(start_benchmark ${dependencies_targets})
 
 rclcpp_components_register_node(
     start_benchmark PLUGIN "orbbec_camera::tools::StartBenchmark" EXECUTABLE start_benchmark_node
@@ -225,7 +255,7 @@ rclcpp_components_register_node(
 add_library(multi_save_rgbir SHARED tools/multi_save_rgbir.cpp src/utils.cpp)
 target_include_directories(multi_save_rgbir PUBLIC ${COMMON_INCLUDE_DIRS})
 target_link_libraries(multi_save_rgbir ${COMMON_LIBRARIES})
-ament_target_dependencies(multi_save_rgbir ${dependencies})
+target_link_libraries(multi_save_rgbir ${dependencies_targets})
 
 rclcpp_components_register_node(
     multi_save_rgbir PLUGIN "orbbec_camera::tools::MultiCameraSubscriber" EXECUTABLE multi_save_rgbir_node

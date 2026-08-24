@@ -319,10 +319,6 @@ void OBCameraNodeDriver::init() {
   device_access_mode_ = stringToAccessMode(device_access_mode_str_);
   RCLCPP_INFO_STREAM(logger_, "Device access mode: " << device_access_mode_str_ << " ("
                                                      << device_access_mode_ << ")");
-  // Selecting a UVC backend reaches into the SDK's USB pal, which throws outright when
-  // libusb is unavailable (no /dev/bus/usb). Net devices stream over GVCP/RTSP and never
-  // touch UVC, so skip the call for them rather than take a fatal error for a setting the
-  // device will not use.
   if (!net_device_ip_.empty()) {
     RCLCPP_INFO_STREAM(logger_, "Net device at " << net_device_ip_
                                                  << ", skipping UVC backend selection");

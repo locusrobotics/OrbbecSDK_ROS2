@@ -8,7 +8,7 @@ from launch.actions import IncludeLaunchDescription, GroupAction, TimerAction, D
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
-PICK_CAMERA_MODE = os.environ.get("PICK_CAMERA_MODE", "trigger")
+PICK_CAMERA_MODE = os.environ.get("PICK_CAMERA_MODE", "stream")
 ROBOT_NAMESPACE = os.environ.get("ROBOT_NAMESPACE", "")
 PICK_CAMERA_FW_VERSION = os.environ.get("PICK_CAMERA_FW_VERSION", "1.8.10")
 ROS_LOG_DIR = os.environ.get("ROS_LOG_DIR", "~/.ros/log")

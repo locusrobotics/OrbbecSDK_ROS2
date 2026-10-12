@@ -47,7 +47,7 @@ def launch_side_cameras(context: LaunchContext):
         launch_arguments={
             "namespace": robot_namespace,
             "camera_name": "inward_b_right_camera",
-            "net_device_ip": "192.168.1.30",
+            "net_device_ip": "10.2.98.202",
             "net_device_port": "8090",
             "exposure_range_mode": "regular",
             "sync_mode": sync_mode,
@@ -82,7 +82,7 @@ def launch_side_cameras(context: LaunchContext):
         launch_arguments={
             "namespace": robot_namespace,
             "camera_name": "inward_b_left_camera",
-            "net_device_ip": "192.168.1.31",
+            "net_device_ip": "10.2.98.203",
             "net_device_port": "8090",
             "exposure_range_mode": "regular",
             "sync_mode": sync_mode,
@@ -117,7 +117,7 @@ def launch_side_cameras(context: LaunchContext):
         launch_arguments={
             "namespace": robot_namespace,
             "camera_name": "inward_a_right_camera",
-            "net_device_ip": "192.168.1.32",
+            "net_device_ip": "10.2.98.204",
             "net_device_port": "8090",
             "exposure_range_mode": "regular",
             "sync_mode": sync_mode,
@@ -152,7 +152,7 @@ def launch_side_cameras(context: LaunchContext):
         launch_arguments={
             "namespace": robot_namespace,
             "camera_name": "inward_a_left_camera",
-            "net_device_ip": "192.168.1.33",
+            "net_device_ip": "10.2.98.205",
             "net_device_port": "8090",
             "exposure_range_mode": "regular",
             "sync_mode": sync_mode,

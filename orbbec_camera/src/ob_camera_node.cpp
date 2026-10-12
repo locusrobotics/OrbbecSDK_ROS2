@@ -4256,6 +4256,9 @@ bool OBCameraNode::decodeColorFrameToBuffer(const std::shared_ptr<ob::Frame> &fr
     }
   }
 #endif
+  RCLCPP_INFO_THROTTLE(logger_, *(node_->get_clock()), 10000,
+                       "Color frame decode path: %s (frame format=%d)",
+                       is_decoded ? "hardware" : "software", static_cast<int>(frame->getFormat()));
   if (!is_decoded) {
     auto video_frame = softwareDecodeColorFrame(frame, stream_index);
     if (!video_frame) {

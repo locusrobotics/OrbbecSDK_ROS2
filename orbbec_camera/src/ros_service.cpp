@@ -126,7 +126,7 @@ void OBCameraNode::setupCameraCtrlServices() {
       continue;
     }
     auto stream_name = stream_name_[stream_index];
-    std::string service_name = "get_" + stream_name + "_exposure";
+    std::string service_name = camera_name_ + "/" + "get_" + stream_name + "_exposure";
     get_exposure_srv_[stream_index] = node_->create_service<GetInt32>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<GetInt32::Request> request,
@@ -134,14 +134,14 @@ void OBCameraNode::setupCameraCtrlServices() {
           getExposureCallback(request, response, stream_index);
         });
 
-    service_name = "set_" + stream_name + "_exposure";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_exposure";
     set_exposure_srv_[stream_index] = node_->create_service<SetInt32>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetInt32::Request> request,
                                             std::shared_ptr<SetInt32::Response> response) {
           setExposureCallback(request, response, stream_index);
         });
-    service_name = "get_" + stream_name + "_gain";
+    service_name = camera_name_ + "/" + "get_" + stream_name + "_gain";
     get_gain_srv_[stream_index] = node_->create_service<GetInt32>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<GetInt32::Request> request,
@@ -149,14 +149,14 @@ void OBCameraNode::setupCameraCtrlServices() {
           getGainCallback(request, response, stream_index);
         });
 
-    service_name = "set_" + stream_name + "_gain";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_gain";
     set_gain_srv_[stream_index] = node_->create_service<SetInt32>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetInt32::Request> request,
                                             std::shared_ptr<SetInt32::Response> response) {
           setGainCallback(request, response, stream_index);
         });
-    service_name = "set_" + stream_name + "_auto_exposure";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_auto_exposure";
     set_auto_exposure_srv_[stream_index] = node_->create_service<SetBool>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetBool::Request> request,
@@ -164,7 +164,7 @@ void OBCameraNode::setupCameraCtrlServices() {
           setAutoExposureCallback(request, response, stream_index);
         });
 
-    service_name = "set_" + stream_name + "_ae_roi";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_ae_roi";
     set_ae_roi_srv_[stream_index] = node_->create_service<SetArrays>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetArrays::Request> request,
@@ -172,7 +172,7 @@ void OBCameraNode::setupCameraCtrlServices() {
           setAeRoiCallback(request, response, stream_index);
         });
 
-    service_name = "toggle_" + stream_name;
+    service_name = camera_name_ + "/" + "toggle_" + stream_name;
 
     toggle_sensor_srv_[stream_index] = node_->create_service<SetBool>(
         service_name,
@@ -180,21 +180,21 @@ void OBCameraNode::setupCameraCtrlServices() {
                                             std::shared_ptr<SetBool::Response> response) {
           toggleSensorCallback(request, response, stream_index);
         });
-    service_name = "set_" + stream_name + "_mirror";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_mirror";
     set_mirror_srv_[stream_index] = node_->create_service<SetBool>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetBool::Request> request,
                                             std::shared_ptr<SetBool::Response> response) {
           setMirrorCallback(request, response, stream_index);
         });
-    service_name = "set_" + stream_name + "_flip";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_flip";
     set_flip_srv_[stream_index] = node_->create_service<SetBool>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetBool::Request> request,
                                             std::shared_ptr<SetBool::Response> response) {
           setFlipCallback(request, response, stream_index);
         });
-    service_name = "set_" + stream_name + "_rotation";
+    service_name = camera_name_ + "/" + "set_" + stream_name + "_rotation";
     set_rotation_srv_[stream_index] = node_->create_service<SetInt32>(
         service_name,
         [this, stream_index = stream_index](const std::shared_ptr<SetInt32::Request> request,
@@ -204,14 +204,14 @@ void OBCameraNode::setupCameraCtrlServices() {
   }
   if (isPropertyWritable(device_, OB_PROP_FAN_WORK_MODE_INT)) {
     set_fan_work_mode_srv_ = node_->create_service<SetInt32>(
-        "set_fan_work_mode", [this](const std::shared_ptr<SetInt32::Request> request,
+        camera_name_ + "/" + "set_fan_work_mode", [this](const std::shared_ptr<SetInt32::Request> request,
                                     std::shared_ptr<SetInt32::Response> response) {
           setFanWorkModeCallback(request, response);
         });
   }
   if (isPropertyWritable(device_, OB_PROP_FLOOD_BOOL)) {
     set_floor_enable_srv_ = node_->create_service<SetBool>(
-        "set_floor_enable", [this](const std::shared_ptr<rmw_request_id_t> request_header,
+        camera_name_ + "/" + "set_floor_enable", [this](const std::shared_ptr<rmw_request_id_t> request_header,
                                    const std::shared_ptr<SetBool::Request> request,
                                    std::shared_ptr<SetBool::Response> response) {
           setFloorEnableCallback(request_header, request, response);
@@ -220,7 +220,7 @@ void OBCameraNode::setupCameraCtrlServices() {
   if (isPropertyWritable(device_, OB_PROP_LASER_CONTROL_INT) ||
       isPropertyWritable(device_, OB_PROP_LASER_BOOL)) {
     set_laser_enable_srv_ = node_->create_service<SetBool>(
-        "set_laser_enable", [this](const std::shared_ptr<rmw_request_id_t> request_header,
+        camera_name_ + "/" + "set_laser_enable", [this](const std::shared_ptr<rmw_request_id_t> request_header,
                                    const std::shared_ptr<SetBool::Request> request,
                                    std::shared_ptr<SetBool::Response> response) {
           setLaserEnableCallback(request_header, request, response);
@@ -232,7 +232,7 @@ void OBCameraNode::setupCameraCtrlServices() {
        (isPropertyReadable(device_, OB_PROP_LASER_BOOL) &&
         isPropertyWritable(device_, OB_PROP_LASER_BOOL)))) {
     set_ldp_enable_srv_ = node_->create_service<SetBool>(
-        "set_ldp_enable", [this](const std::shared_ptr<rmw_request_id_t> request_header,
+        camera_name_ + "/" + "set_ldp_enable", [this](const std::shared_ptr<rmw_request_id_t> request_header,
                                  const std::shared_ptr<SetBool::Request> request,
                                  std::shared_ptr<SetBool::Response> response) {
           setLdpEnableCallback(request_header, request, response);
@@ -241,7 +241,7 @@ void OBCameraNode::setupCameraCtrlServices() {
   if (isPropertyReadable(device_, OB_PROP_LDP_BOOL) &&
       isPropertyReadable(device_, OB_PROP_LDP_STATUS_BOOL)) {
     get_ldp_status_srv_ = node_->create_service<GetBool>(
-        "get_ldp_status", [this](const std::shared_ptr<rmw_request_id_t> request_header,
+        camera_name_ + "/" + "get_ldp_status", [this](const std::shared_ptr<rmw_request_id_t> request_header,
                                  const std::shared_ptr<GetBool::Request> request,
                                  std::shared_ptr<GetBool::Response> response) {
           (void)request_header;
@@ -278,28 +278,28 @@ void OBCameraNode::setupCameraCtrlServices() {
   }
 
   get_white_balance_srv_ = node_->create_service<GetInt32>(
-      "get_white_balance", [this](const std::shared_ptr<GetInt32::Request> request,
+      camera_name_ + "/" + "get_white_balance", [this](const std::shared_ptr<GetInt32::Request> request,
                                   std::shared_ptr<GetInt32::Response> response) {
         getWhiteBalanceCallback(request, response);
       });
 
   set_white_balance_srv_ = node_->create_service<SetInt32>(
-      "set_white_balance", [this](const std::shared_ptr<SetInt32::Request> request,
+      camera_name_ + "/" + "set_white_balance", [this](const std::shared_ptr<SetInt32::Request> request,
                                   std::shared_ptr<SetInt32::Response> response) {
         setWhiteBalanceCallback(request, response);
       });
   get_auto_white_balance_srv_ = node_->create_service<GetInt32>(
-      "get_auto_white_balance", [this](const std::shared_ptr<GetInt32::Request> request,
+      camera_name_ + "/" + "get_auto_white_balance", [this](const std::shared_ptr<GetInt32::Request> request,
                                        std::shared_ptr<GetInt32::Response> response) {
         getAutoWhiteBalanceCallback(request, response);
       });
   set_auto_white_balance_srv_ = node_->create_service<SetBool>(
-      "set_auto_white_balance", [this](const std::shared_ptr<SetBool::Request> request,
+      camera_name_ + "/" + "set_auto_white_balance", [this](const std::shared_ptr<SetBool::Request> request,
                                        std::shared_ptr<SetBool::Response> response) {
         setAutoWhiteBalanceCallback(request, response);
       });
   get_device_srv_ = node_->create_service<GetDeviceInfo>(
-      "get_device_info", [this](const std::shared_ptr<GetDeviceInfo::Request> request,
+      camera_name_ + "/" + "get_device_info", [this](const std::shared_ptr<GetDeviceInfo::Request> request,
                                 std::shared_ptr<GetDeviceInfo::Response> response) {
         getDeviceInfoCallback(request, response);
       });
@@ -309,16 +309,16 @@ void OBCameraNode::setupCameraCtrlServices() {
         getDeviceConfigCallback(request, response);
       });
   get_sdk_version_srv_ = node_->create_service<GetString>(
-      "get_sdk_version",
+      camera_name_ + "/" + "get_sdk_version",
       [this](const std::shared_ptr<GetString::Request> request,
              std::shared_ptr<GetString::Response> response) { getSDKVersion(request, response); });
   save_images_srv_ = node_->create_service<std_srvs::srv::Empty>(
-      "save_images", [this](const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+      camera_name_ + "/" + "save_images", [this](const std::shared_ptr<std_srvs::srv::Empty::Request> request,
                             std::shared_ptr<std_srvs::srv::Empty::Response> response) {
         saveImageCallback(request, response);
       });
   save_point_cloud_srv_ = node_->create_service<std_srvs::srv::Empty>(
-      "save_point_cloud", [this](const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+      camera_name_ + "/" + "save_point_cloud", [this](const std::shared_ptr<std_srvs::srv::Empty::Request> request,
                                  std::shared_ptr<std_srvs::srv::Empty::Response> response) {
         savePointCloudCallback(request, response);
       });
@@ -329,21 +329,21 @@ void OBCameraNode::setupCameraCtrlServices() {
       });
   if (isPropertyWritable(device_, OB_PROP_IR_CHANNEL_DATA_SOURCE_INT)) {
     switch_ir_camera_srv_ = node_->create_service<SetString>(
-        "switch_ir", [this](const std::shared_ptr<SetString::Request> request,
+        camera_name_ + "/" + "switch_ir", [this](const std::shared_ptr<SetString::Request> request,
                             std::shared_ptr<SetString::Response> response) {
           switchIRCameraCallback(request, response);
         });
   }
   if (isPropertyWritable(device_, OB_PROP_IR_LONG_EXPOSURE_BOOL)) {
     set_ir_long_exposure_srv_ = node_->create_service<SetBool>(
-        "set_ir_long_exposure", [this](const std::shared_ptr<SetBool::Request> request,
+        camera_name_ + "/" + "set_ir_long_exposure", [this](const std::shared_ptr<SetBool::Request> request,
                                        std::shared_ptr<SetBool::Response> response) {
           setIRLongExposureCallback(request, response);
         });
   }
   if (isPropertyReadable(device_, OB_PROP_LDP_MEASURE_DISTANCE_INT)) {
     get_lrm_measure_distance_srv_ = node_->create_service<GetInt32>(
-        "get_lrm_measure_distance", [this](const std::shared_ptr<GetInt32::Request> request,
+        camera_name_ + "/" + "get_lrm_measure_distance", [this](const std::shared_ptr<GetInt32::Request> request,
                                            std::shared_ptr<GetInt32::Response> response) {
           getLrmMeasureDistanceCallback(request, response);
         });
@@ -351,62 +351,62 @@ void OBCameraNode::setupCameraCtrlServices() {
   if (isPropertyWritable(device_, OB_PROP_TIMER_RESET_TRIGGER_OUT_ENABLE_BOOL) &&
       isPropertyWritable(device_, OB_PROP_TIMER_RESET_SIGNAL_BOOL)) {
     set_reset_timestamp_srv_ = node_->create_service<SetBool>(
-        "set_reset_timestamp", [this](const std::shared_ptr<SetBool::Request> request,
+        camera_name_ + "/" + "set_reset_timestamp", [this](const std::shared_ptr<SetBool::Request> request,
                                       std::shared_ptr<SetBool::Response> response) {
           setRESETTimestampCallback(request, response);
         });
   }
   if (isPropertyWritable(device_, OB_PROP_FRAME_INTERLEAVE_LASER_PATTERN_SYNC_DELAY_INT)) {
     set_interleaver_laser_sync_srv_ = node_->create_service<SetInt32>(
-        "set_sync_interleaverlaser", [this](const std::shared_ptr<SetInt32::Request> request,
+        camera_name_ + "/" + "set_sync_interleaverlaser", [this](const std::shared_ptr<SetInt32::Request> request,
                                             std::shared_ptr<SetInt32::Response> response) {
           setSYNCInterleaveLaserCallback(request, response);
         });
   }
   set_sync_host_time_srv_ = node_->create_service<SetBool>(
-      "set_sync_hosttime", [this](const std::shared_ptr<SetBool::Request> request,
+      camera_name_ + "/" + "set_sync_hosttime", [this](const std::shared_ptr<SetBool::Request> request,
                                   std::shared_ptr<SetBool::Response> response) {
         setSYNCHostimeCallback(request, response);
       });
-  send_software_trigger_srv_ = node_->create_service<SetBool>(
-      "send_software_trigger", [this](const std::shared_ptr<SetBool::Request> request,
-                                      std::shared_ptr<SetBool::Response> response) {
+  send_service_trigger_srv_ = node_->create_service<CameraTrigger>(
+      camera_name_ + "/" + "send_service_trigger", [this](const std::shared_ptr<CameraTrigger::Request> request,
+                                     std::shared_ptr<CameraTrigger::Response> response) {
         sendSoftwareTriggerCallback(request, response);
       });
   if (device_->getDeviceInfo()->getPid() == GEMINI_435Le_PID) {
     write_customerdata_srv_ = node_->create_service<SetString>(
-        "write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
+        camera_name_ + "/" + "write_customer_data", [this](const std::shared_ptr<SetString::Request> request,
                                       std::shared_ptr<SetString::Response> response) {
           writeCustomerDataCallback(request, response);
         });
     read_customerdata_srv_ = node_->create_service<GetString>(
-        "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
+        camera_name_ + "/" + "read_customer_data", [this](const std::shared_ptr<GetString::Request> request,
                                      std::shared_ptr<GetString::Response> response) {
           readCustomerDataCallback(request, response);
         });
     set_user_calib_params_srv_ = node_->create_service<SetUserCalibParams>(
-        "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
+        camera_name_ + "/" + "set_user_calib_params", [this](const std::shared_ptr<SetUserCalibParams::Request> request,
                                         std::shared_ptr<SetUserCalibParams::Response> response) {
           setUserCalibParamsCallback(request, response);
         });
     get_user_calib_params_srv_ = node_->create_service<GetUserCalibParams>(
-        "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
+        camera_name_ + "/" + "get_user_calib_params", [this](const std::shared_ptr<GetUserCalibParams::Request> request,
                                         std::shared_ptr<GetUserCalibParams::Response> response) {
           getUserCalibParamsCallback(request, response);
         });
   }
   set_ae_reference_stream_srv_ = node_->create_service<SetString>(
-      "set_ae_reference_stream", [this](const std::shared_ptr<SetString::Request> request,
+      camera_name_ + "/" + "set_ae_reference_stream", [this](const std::shared_ptr<SetString::Request> request,
                                         std::shared_ptr<SetString::Response> response) {
         setAEReferenceStreamCallback(request, response);
       });
   set_ae_strategy_srv_ = node_->create_service<SetString>(
-      "set_ae_strategy", [this](const std::shared_ptr<SetString::Request> request,
+      camera_name_ + "/" + "set_ae_strategy", [this](const std::shared_ptr<SetString::Request> request,
                                 std::shared_ptr<SetString::Response> response) {
         setAEStrategyCallback(request, response);
       });
   set_streams_enable_srv_ = node_->create_service<SetBool>(
-      "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
+      camera_name_ + "/" + "set_streams_enable", [this](const std::shared_ptr<SetBool::Request> request,
                                    std::shared_ptr<SetBool::Response> response) {
         setStreamsEnableCallback(request, response);
       });
@@ -421,30 +421,30 @@ void OBCameraNode::setupCameraCtrlServices() {
         setStreamProfileCallback(request, response);
       });
   get_streams_enable_srv_ = node_->create_service<GetBool>(
-      "get_streams_enable", [this](const std::shared_ptr<GetBool::Request> request,
+      camera_name_ + "/" + "get_streams_enable", [this](const std::shared_ptr<GetBool::Request> request,
                                    std::shared_ptr<GetBool::Response> response) {
         getStreamsEnableCallback(request, response);
       });
   set_point_cloud_decimation_srv_ = node_->create_service<SetInt32>(
-      "set_point_cloud_decimation", [this](const std::shared_ptr<SetInt32::Request> request,
-                                           std::shared_ptr<SetInt32::Response> response) {
+      camera_name_ + "/" + "set_point_cloud_decimation", [this](const std::shared_ptr<SetInt32::Request> request,
+                                            std::shared_ptr<SetInt32::Response> response) {
         setPointCloudDecimationCallback(request, response);
       });
   get_point_cloud_decimation_srv_ = node_->create_service<GetInt32>(
-      "get_point_cloud_decimation", [this](const std::shared_ptr<GetInt32::Request> request,
-                                           std::shared_ptr<GetInt32::Response> response) {
+      camera_name_ + "/" + "get_point_cloud_decimation", [this](const std::shared_ptr<GetInt32::Request> request,
+                                            std::shared_ptr<GetInt32::Response> response) {
         getPointCloudDecimationCallback(request, response);
       });
   if (isPropertyWritable(device_, OB_PROP_DISP_SEARCH_RANGE_MODE_INT)) {
     set_disparity_range_mode_srv_ = node_->create_service<SetInt32>(
-        "set_disparity_range_mode", [this](const std::shared_ptr<SetInt32::Request> request,
+        camera_name_ + "/" + "set_disparity_range_mode", [this](const std::shared_ptr<SetInt32::Request> request,
                                            std::shared_ptr<SetInt32::Response> response) {
           setDisparityRangeModeCallback(request, response);
         });
   }
   if (isPropertyWritable(device_, OB_PROP_DISP_SEARCH_OFFSET_INT)) {
     set_disparity_search_offset_srv_ = node_->create_service<SetInt32>(
-        "set_disparity_search_offset", [this](const std::shared_ptr<SetInt32::Request> request,
+        camera_name_ + "/" + "set_disparity_search_offset", [this](const std::shared_ptr<SetInt32::Request> request,
                                               std::shared_ptr<SetInt32::Response> response) {
           setDisparitySearchOffsetCallback(request, response);
         });
@@ -456,6 +456,14 @@ void OBCameraNode::setupCameraCtrlServices() {
           setSyncIoVoltageLevelCallback(request, response);
         });
   }
+  change_state_srv_ = node_->create_service<lifecycle_msgs::srv::ChangeState>(
+      camera_name_ + "/" + "change_state", std::bind(&OBCameraNode::handleChangeStateRequest, this,
+                              std::placeholders::_1, std::placeholders::_2));
+  get_state_srv_ = node_->create_service<lifecycle_msgs::srv::GetState>(
+      camera_name_ + "/" + "get_state", std::bind(&OBCameraNode::handleGetStateRequest, this,
+                              std::placeholders::_1, std::placeholders::_2));
+
+
 }
 
 void OBCameraNode::getPointCloudDecimationCallback(
@@ -2085,23 +2093,126 @@ void OBCameraNode::setSYNCHostimeCallback(
   }
 }
 
-void OBCameraNode::sendSoftwareTriggerCallback(
-    const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
-    std::shared_ptr<std_srvs::srv::SetBool::Response>& response) {
-  try {
-    if (request->data) {
-      device_->triggerCapture();
+void OBCameraNode::resetCaptureServiceVariables() {
+  service_capture_started_ = false;
+  number_of_rgb_frames_captured_ = 0;
+  number_of_depth_frames_captured_ = 0;
+}
+
+void OBCameraNode::handleGetStateRequest(
+    const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> /* request */,
+        std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response) {
+  lifecycle_msgs::msg::State state;
+  state.id = lifecycle_state_;
+  response->current_state = state;
+}
+
+void OBCameraNode::handleChangeStateRequest(
+    const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
+        std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response) {
+    
+  RCLCPP_INFO(logger_, "Received request to change state '%d' with label '%s'",
+                     request->transition.id, request->transition.label.c_str());
+  
+  if (trigger_failure_monitor_) {
+    bool recovery_in_progress = trigger_failure_monitor_->isRecoveryInProgress();
+    if (recovery_in_progress) {
+      RCLCPP_WARN_STREAM(logger_, "Trigger failure recovery in progress. Ignoring state change request.");
+      response->success = false;
+      return;
     }
-    response->success = true;
-  } catch (const ob::Error& e) {
-    response->message = orbbec_camera::formatObErrorWithStatus(e);
+  }
+  response->success = true;
+  if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE) {
+    RCLCPP_INFO_STREAM(logger_, "Recieved request to turn ON camera streams");
+    if (pipeline_started_){
+      RCLCPP_WARN_STREAM(logger_, "Camera streams already ON");
+      response->success = true;
+      return;
+    }
+    // Activate streams
+    auto success = activateStreams();
+    response->success = success;
+  }
+  else if(request->transition.id == lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE) {
+    RCLCPP_INFO_STREAM(logger_, "Recieved request to turn OFF camera streams");
+    if (!pipeline_ || !pipeline_started_){
+      RCLCPP_WARN_STREAM(logger_, "Camera streams already OFF");
+      response->success = true;
+      return;
+    }
+    // Deactivate streams
+    auto success = deactivateStreams();
+    response->success = success;
+  }
+  else {
     response->success = false;
-  } catch (const std::exception& e) {
-    response->message = e.what();
-    response->success = false;
-  } catch (...) {
-    response->message = "unknown error";
-    response->success = false;
+    RCLCPP_ERROR_STREAM(logger_, "Unsupported transition ID: " << request->transition.id);
+  }
+}
+
+void OBCameraNode::sendSoftwareTriggerCallback(
+    const std::shared_ptr<CameraTrigger::Request>& request,
+    std::shared_ptr<CameraTrigger::Response>& response) {
+  (void)request;
+  if (service_trigger_enabled_ and !software_trigger_enabled_) {
+    service_capture_started_ = true;
+    try {
+      RCLCPP_DEBUG_STREAM(logger_, "Triggering");
+      device_->triggerCapture();
+
+      RCLCPP_DEBUG_STREAM(logger_, "Capturing images");
+      std::unique_lock<std::mutex> lock(service_capture_lock_);
+      service_capture_cv_.wait_until(
+          lock, std::chrono::system_clock::now() + std::chrono::seconds(1), [this]() {
+            return (number_of_rgb_frames_captured_ >= frames_per_trigger_ &&
+                    number_of_depth_frames_captured_ >= frames_per_trigger_);
+          });
+      RCLCPP_DEBUG_STREAM(logger_, "Captured " << number_of_rgb_frames_captured_ << " "
+                                               << number_of_depth_frames_captured_ << " "
+                                               << (color_image_ == nullptr) << " "
+                                               << (depth_image_ == nullptr));
+
+      if (number_of_rgb_frames_captured_ >= frames_per_trigger_ &&
+          number_of_depth_frames_captured_ >= frames_per_trigger_ && color_image_ && depth_image_) {
+        response->success = true;
+        response->rgb_image = *(color_image_);
+        response->depth_image = *(depth_image_);
+        response->rgb_camera_info = color_image_camera_info_;
+        response->depth_camera_info = depth_image_camera_info_;
+        // reset failure count on success
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordSuccess();
+        }
+      } else {
+        response->success = false;
+        response->message = "Failed to capture images";
+        if (trigger_failure_monitor_) {
+          trigger_failure_monitor_->recordFailure();
+        }
+      }
+    } catch (const ob::Error& e) {
+      response->message = e.getMessage();
+      response->success = false;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
+    } catch (const std::exception& e) {
+      response->message = e.what();
+      response->success = false;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
+    } catch (...) {
+      response->message = "unknown error";
+      response->success = false;
+      if (trigger_failure_monitor_) {
+        trigger_failure_monitor_->recordFailure();
+      }
+    }
+    resetCaptureServiceVariables();
+  } else {
+    RCLCPP_INFO_STREAM(logger_, "Service not enabled");
   }
 }
 

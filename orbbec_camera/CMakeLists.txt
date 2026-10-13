@@ -30,6 +30,7 @@ set(dependencies
     image_transport
     image_publisher
     message_filters
+    lifecycle_msgs
     OpenCV
     orbbec_camera_msgs
     rcl_interfaces
@@ -165,6 +166,7 @@ set(SOURCE_FILES
   src/synced_imu_publisher.cpp
   src/utils.cpp
   src/jpeg_decoder.cpp
+  src/trigger_failure_monitor.cpp
 )
 
 if(USE_RK_HW_DECODER)

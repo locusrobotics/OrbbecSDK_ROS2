@@ -785,7 +785,12 @@ void OBCameraNode::setAndGetNodeParameter(
   }
 }
 
-OBCameraNode::~OBCameraNode() noexcept { clean(); }
+OBCameraNode::~OBCameraNode() noexcept {
+   if(diagnostic_timer_) {
+	   diagnostic_timer_->cancel();
+   }
+   clean();
+ }
 
 void OBCameraNode::rebootDevice() {
   RCLCPP_DEBUG_STREAM(logger_, "Cleaning before rebooting device");
@@ -840,6 +845,10 @@ void OBCameraNode::clean() noexcept {
     }
     if (diagnostic_updater_) {
       diagnostic_updater_.reset();
+    }
+    if (trigger_failure_monitor_) {
+      trigger_failure_monitor_->cleanup();
+      trigger_failure_monitor_.reset();
     }
   } catch (...) {
     // Ignore exceptions during diagnostic cleanup
@@ -1169,8 +1178,13 @@ void OBCameraNode::setupDevices() {
       RCLCPP_INFO_STREAM(logger_,
                          "Software trigger period " << software_trigger_period_.count() << " ms");
       software_trigger_timer_ = node_->create_wall_timer(software_trigger_period_, [this]() {
-        if (software_trigger_enabled_) {
+        if (software_trigger_enabled_ || (service_trigger_enabled_ and warmup_trigger_frame_count_ <= warmup_trigger_frame_threshold_)) {
           TRY_EXECUTE_BLOCK(device_->triggerCapture());
+
+	  warmup_trigger_frame_count_++;
+          if (service_trigger_enabled_  and warmup_trigger_frame_count_ <= warmup_trigger_frame_threshold_) {
+            RCLCPP_INFO_STREAM(logger_, "Warmup trigger: " << warmup_trigger_frame_count_ << "/" << warmup_trigger_frame_threshold_);
+          }
         }
       });
     }
@@ -3360,7 +3374,7 @@ void OBCameraNode::setupDepthPostProcessFilter() {
     }
   }
   set_filter_srv_ = node_->create_service<SetFilter>(
-      "set_filter", [this](const std::shared_ptr<SetFilter ::Request> request,
+      camera_name_ + "/set_filter", [this](const std::shared_ptr<SetFilter ::Request> request,
                            std::shared_ptr<SetFilter ::Response> response) {
         setFilterCallback(request, response);
       });
@@ -4014,6 +4028,7 @@ int OBCameraNode::init_interleave_laser_param() {
 void OBCameraNode::startStreams() {
   if (pipeline_ != nullptr) {
     pipeline_.reset();
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
   }
   pipeline_ = std::make_unique<ob::Pipeline>(device_);
 
@@ -4091,6 +4106,7 @@ void OBCameraNode::startStreams() {
                            OB_PROP_FRAME_INTERLEAVE_LASER_PATTERN_SYNC_DELAY_INT));
   }
   pipeline_started_.store(true);
+  set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 }
 
 void OBCameraNode::startIMUSyncStream() {
@@ -4221,6 +4237,8 @@ void OBCameraNode::stopStreams() {
           RCLCPP_WARN_STREAM(logger_, "Failed to disable interleave frame during shutdown");
         }
       }
+      pipeline_started_.store(false);
+      set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     } else {
       RCLCPP_WARN_STREAM(logger_,
                          "Device or pipeline not available during stop - likely disconnected");
@@ -4228,8 +4246,10 @@ void OBCameraNode::stopStreams() {
   } catch (const ob::Error &e) {
     RCLCPP_ERROR_STREAM(logger_,
                         "Failed to stop pipeline: " << orbbec_camera::formatObErrorWithStatus(e));
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
   } catch (...) {
     RCLCPP_ERROR_STREAM(logger_, "Failed to stop pipeline");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
   }
 }
 
@@ -4371,7 +4391,12 @@ void OBCameraNode::setupDefaultImageFormat() {
 
 void OBCameraNode::getParameters() {
   setAndGetNodeParameter<std::string>(camera_name_, "camera_name", "camera");
-  camera_link_frame_id_ = camera_name_ + "_link";
+  setAndGetNodeParameter<std::string>(namespace_, "namespace", "");
+  if (namespace_ != "") {
+    namespace_ += "/";
+  }
+
+  camera_link_frame_id_ = namespace_ + camera_name_ + "_link";
   for (auto stream_index : IMAGE_STREAMS) {
     std::string param_name = stream_name_[stream_index] + "_width";
     setAndGetNodeParameter(width_[stream_index], param_name, 0);
@@ -4391,11 +4416,11 @@ void OBCameraNode::getParameters() {
     setAndGetNodeParameter<bool>(mirror_stream_[stream_index], param_name, false);
     param_name = stream_name_[stream_index] + "_rotation";
     setAndGetNodeParameter<int>(rotation_stream_[stream_index], param_name, -1);
-    param_name = camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
-    std::string default_frame_id = camera_name_ + "_" + stream_name_[stream_index] + "_frame";
+    param_name = stream_name_[stream_index] + "_frame_id";
+    std::string default_frame_id = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame";
     setAndGetNodeParameter(frame_id_[stream_index], param_name, default_frame_id);
     std::string default_optical_frame_id =
-        camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
+        namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
     param_name = stream_name_[stream_index] + "_optical_frame_id";
     setAndGetNodeParameter(optical_frame_id_[stream_index], param_name, default_optical_frame_id);
     param_name = stream_name_[stream_index] + "_format";
@@ -4414,7 +4439,7 @@ void OBCameraNode::getParameters() {
     depth_aligned_frame_id_[stream_index] = optical_frame_id_[COLOR];
   }
 
-  accel_gyro_frame_id_ = camera_name_ + "_accel_gyro_optical_frame";
+  accel_gyro_frame_id_ = namespace_ + camera_name_ + "_accel_gyro_optical_frame";
 
   setAndGetNodeParameter<bool>(enable_sync_output_accel_gyro_, "enable_sync_output_accel_gyro",
                                false);
@@ -4430,15 +4455,15 @@ void OBCameraNode::getParameters() {
     setAndGetNodeParameter<std::string>(imu_rate_[stream_index], param_name, "");
     param_name = stream_name_[stream_index] + "_range";
     setAndGetNodeParameter<std::string>(imu_range_[stream_index], param_name, "");
-    param_name = camera_name_ + "_" + stream_name_[stream_index] + "_frame_id";
-    std::string default_frame_id = camera_name_ + "_" + stream_name_[stream_index] + "_frame";
+    param_name = stream_name_[stream_index] + "_frame_id";
+    std::string default_frame_id = namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_frame";
     setAndGetNodeParameter(frame_id_[stream_index], param_name, default_frame_id);
     std::string default_optical_frame_id =
-        camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
+        namespace_ + camera_name_ + "_" + stream_name_[stream_index] + "_optical_frame";
     param_name = stream_name_[stream_index] + "_optical_frame_id";
     setAndGetNodeParameter(optical_frame_id_[stream_index], param_name, default_optical_frame_id);
     depth_aligned_frame_id_[stream_index] =
-        camera_name_ + "_" + stream_name_[COLOR] + "_optical_frame";
+        namespace_ + camera_name_ + "_" + stream_name_[COLOR] + "_optical_frame";
   }
   setAndGetNodeParameter<bool>(publish_tf_, "publish_tf", true);
   setAndGetNodeParameter<double>(tf_publish_rate_, "tf_publish_rate", 0.0);
@@ -4537,7 +4562,8 @@ void OBCameraNode::getParameters() {
   setAndGetNodeParameter<int>(trigger2image_delay_us_, "trigger2image_delay_us", 0);
   setAndGetNodeParameter<int>(trigger_out_delay_us_, "trigger_out_delay_us", 0);
   setAndGetNodeParameter<bool>(trigger_out_enabled_, "trigger_out_enabled", true);
-  setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", true);
+  setAndGetNodeParameter<bool>(software_trigger_enabled_, "software_trigger_enabled", false);
+  setAndGetNodeParameter<bool>(service_trigger_enabled_, "service_trigger_enabled", false);
   setAndGetNodeParameter<bool>(enable_ptp_config_, "enable_ptp_config", false);
   setAndGetNodeParameter<std::string>(cloud_frame_id_, "cloud_frame_id", "");
   if (enable_colored_point_cloud_ || enable_d2c_viewer_) {
@@ -4824,6 +4850,7 @@ void OBCameraNode::setupTopics() {
     setupPublishers();
     setupDiagnosticUpdater();
     exportConfigJsonIfRequested();
+    setupTriggerFailureMonitor();
   } catch (const ob::Error &e) {
     RCLCPP_ERROR_STREAM(logger_,
                         "Failed to setup topics: " << orbbec_camera::formatObErrorWithStatus(e));
@@ -4898,6 +4925,89 @@ void OBCameraNode::onTemperatureUpdate(diagnostic_updater::DiagnosticStatusWrapp
     RCLCPP_ERROR(logger_, "Failed to TemperatureUpdate3: Device is deactivated/disconnected!");
     status.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Unknown error");
   }
+}
+
+bool OBCameraNode::activateStreams() {
+  try {
+    setupProfiles();
+    startStreams();
+    RCLCPP_INFO_STREAM(logger_, "Camera streams are now ON");
+    return true;
+  } catch (const ob::Error& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: " << e.what());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to start camera streams: Unknown Error");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  }
+}
+
+bool OBCameraNode::deactivateStreams() {
+  try {
+    stopStreams();
+    RCLCPP_INFO_STREAM(logger_, "Camera streams are now OFF");
+    return true;
+  } catch (const ob::Error& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.getMessage());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: " << e.what());
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  } catch (...) {
+    RCLCPP_ERROR_STREAM(logger_, "Failed to stop camera streams: Unknown Error");
+    set_state(lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN);
+    return false;
+  }
+}
+
+void OBCameraNode::setupTriggerFailureMonitor() {
+  // Default trigger failure monitor to be enabled if service trigger is enabled
+  bool enabled;
+  int failures_before_recovery;
+  double timer_period_seconds;
+  double period_between_restart_seconds;
+  int warmup_triggers_after_recovery;
+  setAndGetNodeParameter<bool>(enabled, "enable_trigger_failure_monitor", service_trigger_enabled_);
+  setAndGetNodeParameter<int>(failures_before_recovery, "trigger_failures_before_recovery", 2);
+  setAndGetNodeParameter<double>(timer_period_seconds, "trigger_failure_monitor_timer_period", 1.0);
+  setAndGetNodeParameter<double>(period_between_restart_seconds, "trigger_failure_period_between_restart", 0.25);
+  setAndGetNodeParameter<int>(warmup_triggers_after_recovery, "trigger_failure_warmup_triggers_after_recovery", 5);
+  if (!enabled) {
+    RCLCPP_INFO_STREAM(logger_, "Trigger failure monitor is disabled");
+    return;
+  }
+  trigger_failure_monitor_ = std::make_unique<TriggerFailureMonitor>(
+      node_, logger_, failures_before_recovery, timer_period_seconds,
+      period_between_restart_seconds, warmup_triggers_after_recovery);
+  // Set up callbacks for stream control and pipeline status
+  trigger_failure_monitor_->setActivateCallback(
+      std::bind(&OBCameraNode::activateStreams, this));
+  trigger_failure_monitor_->setDeactivateCallback(
+      std::bind(&OBCameraNode::deactivateStreams, this));
+  trigger_failure_monitor_->setPipelineStatusCallback(
+      [this]() { return pipeline_started_.load(); });
+  trigger_failure_monitor_->setTriggerCallback(
+      [this]() {
+        TRY_EXECUTE_BLOCK(device_->triggerCapture());
+      });
+
+  trigger_failure_event_pub_ = node_->create_publisher<std_msgs::msg::String>(
+      "/orbbec_trigger_failure_events", rclcpp::QoS(10));
+  trigger_failure_monitor_->setFailureReportCallback([this]() {
+    if (trigger_failure_event_pub_) {
+      std_msgs::msg::String failure_msg;
+      failure_msg.data = camera_name_;
+      trigger_failure_event_pub_->publish(failure_msg);
+    }
+  });
 }
 
 void OBCameraNode::setupDiagnosticUpdater() {
@@ -5347,7 +5457,8 @@ void OBCameraNode::setupImagePublisher(const stream_index_pair &stream_index) {
     return;
   }
 
-  const std::string topic = stream_name_[stream_index] + "/image_raw";
+  const std::string topic =
+      std::string(node_->get_fully_qualified_name()) + "/" + stream_name_[stream_index] + "/image_raw";
   auto image_qos_profile = getRMWQosProfileFromString(image_qos_[stream_index]);
   if (use_intra_process_) {
     image_qos_profile = rmw_qos_profile_default;
@@ -5394,6 +5505,7 @@ void OBCameraNode::setupPublishers() {
   }
   auto device_info = device_->getDeviceInfo();
   CHECK_NOTNULL(device_info.get());
+  std::string topic_prefix = std::string(node_->get_fully_qualified_name()) + "/";
   for (const auto &stream_index : IMAGE_STREAMS) {
     if (!enable_stream_[stream_index]) {
       continue;
@@ -5401,7 +5513,7 @@ void OBCameraNode::setupPublishers() {
     std::string name = stream_name_[stream_index];
     setupImagePublisher(stream_index);
 
-    std::string topic = name + "/camera_info";
+    std::string topic = topic_prefix + name + "/camera_info";
     auto camera_info_qos = camera_info_qos_[stream_index];
     auto camera_info_qos_profile = getRMWQosProfileFromString(camera_info_qos);
     if (use_intra_process_) {
@@ -5413,7 +5525,7 @@ void OBCameraNode::setupPublishers() {
     if (isPublishMetaData(pid_)) {
       metadata_publishers_[stream_index] =
           node_->create_publisher<orbbec_camera_msgs::msg::Metadata>(
-              name + "/metadata",
+              topic_prefix + name + "/metadata",
               rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(camera_info_qos_profile),
                           camera_info_qos_profile));
     }
@@ -5422,7 +5534,8 @@ void OBCameraNode::setupPublishers() {
   syncSoftwareAlignment();
 
   if (enable_sync_output_accel_gyro_) {
-    std::string topic_name = stream_name_[GYRO] + "_" + stream_name_[ACCEL] + "/sample";
+    std::string topic_name =
+        topic_prefix + stream_name_[GYRO] + "_" + stream_name_[ACCEL] + "/sample";
     auto data_qos = getRMWQosProfileFromString(imu_qos_[GYRO]);
     if (use_intra_process_) {
       data_qos = rmw_qos_profile_default;
@@ -5509,6 +5622,19 @@ void OBCameraNode::setupPublishers() {
     lrm_obstacle_distance_timer_ =
         node_->create_wall_timer(publish_period, [this]() { publishLrmObstacleDistance(); });
   }
+
+  // Similar to a latched topic
+  rclcpp::QoS lifecycle_qos(rclcpp::KeepLast(1));
+  lifecycle_qos.transient_local().reliable();
+  lifecycle_state_pub_ =
+    node_->create_publisher<lifecycle_msgs::msg::State>(topic_prefix + "state", lifecycle_qos);
+}
+
+void OBCameraNode::set_state(uint8_t state) {
+  lifecycle_msgs::msg::State msg;
+  msg.id = state;
+  lifecycle_state_ = state;
+  lifecycle_state_pub_->publish(msg);
 }
 
 void OBCameraNode::syncSoftwareAlignment() {
@@ -6493,7 +6619,7 @@ bool OBCameraNode::decodeColorFrameToBuffer(const std::shared_ptr<ob::Frame> &fr
     has_subscriber = true;
   }
 
-  if (!has_subscriber) {
+  if (!has_subscriber && !service_capture_started_) {
     return false;
   }
 
@@ -6620,7 +6746,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   has_subscriber =
       has_subscriber || (metadata_publishers_.count(stream_index) &&
                          metadata_publishers_[stream_index]->get_subscription_count() > 0);
-  if (!has_subscriber) {
+  if (!has_subscriber && !service_capture_started_) {
     record_image_publish_skipped();
     return;
   }
@@ -6734,7 +6860,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     }
   }
 
-  if (!has_raw_image_subscriber && !save_images_[stream_index]) {
+  if (!has_raw_image_subscriber && !save_images_[stream_index] && !service_capture_started_) {
     CHECK(camera_info_publishers_.count(stream_index) > 0);
     camera_info_publishers_[stream_index]->publish(camera_info);
     publishMetadata(frame, stream_index, camera_info.header);
@@ -6747,7 +6873,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     image.create(height, width, image_format_[stream_index]);
   }
   if (isColorFrameDecodeRequired(frame) &&
-      (has_raw_image_subscriber || save_images_[stream_index])) {
+      (has_raw_image_subscriber || save_images_[stream_index] || service_capture_started_)) {
     if (frame->getType() == OB_FRAME_COLOR && !is_color_frame_decoded_) {
       RCLCPP_ERROR(logger_, "color frame is not decoded");
       record_image_publish_skipped();
@@ -6776,7 +6902,7 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
   camera_info_publishers_[stream_index]->publish(camera_info);
   publishMetadata(frame, stream_index, camera_info.header);
 
-  if (!has_raw_image_subscriber && !save_images_[stream_index]) {
+  if (!has_raw_image_subscriber && !save_images_[stream_index] && !service_capture_started_) {
     return;
   }
   if (stream_index == DEPTH) {
@@ -6784,8 +6910,9 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     image = image * depth_scale;
   }
   CHECK(image_publishers_.count(stream_index) > 0);
-  if (has_raw_image_subscriber || save_images_[stream_index]) {
-    sensor_msgs::msg::Image::UniquePtr image_msg(new sensor_msgs::msg::Image());
+  sensor_msgs::msg::Image::UniquePtr image_msg;
+  if (has_raw_image_subscriber || save_images_[stream_index] || service_capture_started_) {
+    image_msg = std::make_unique<sensor_msgs::msg::Image>();
     cv_bridge::CvImage(std_msgs::msg::Header(), encoding_[stream_index], image)
         .toImageMsg(*image_msg);
     CHECK_NOTNULL(image_msg.get());
@@ -6794,10 +6921,8 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
     image_msg->step = width * unit_step_size_[stream_index];
     image_msg->header.frame_id = frame_id;
     saveImageToFile(stream_index, image, *image_msg);
-    if (!has_raw_image_subscriber) {
-      record_image_publish_skipped();
-      return;
-    }
+  }
+  if (has_raw_image_subscriber) {
     if (frame_timestamp_csv_logger_ && frame_timestamp_csv_logger_->enabled() &&
         (stream_index == COLOR || stream_index == DEPTH)) {
       frame_timestamp_csv_logger_->recordPreImagePublish(stream_index.first, frame,
@@ -6809,6 +6934,26 @@ void OBCameraNode::onNewFrameCallback(const std::shared_ptr<ob::Frame> &frame,
       fps_delay_status_depth_->tick(frame_timestamp);
     }
     image_publishers_[stream_index]->publish(std::move(image_msg));
+  } else {
+    record_image_publish_skipped();
+  }
+  if (service_trigger_enabled_ and service_capture_started_) {
+    std::unique_lock<std::mutex> lock(service_capture_lock_);
+    if (stream_index == COLOR) {
+      if (image_msg) {
+        number_of_rgb_frames_captured_++;
+        color_image_ = std::move(image_msg);
+        color_image_camera_info_ = camera_info;
+      }
+    }
+    else if (stream_index == DEPTH) {
+      if (image_msg) {
+        number_of_depth_frames_captured_++;
+        depth_image_ = std::move(image_msg);
+        depth_image_camera_info_ = camera_info;
+      }
+    }
+    service_capture_cv_.notify_all();
   }
 }
 

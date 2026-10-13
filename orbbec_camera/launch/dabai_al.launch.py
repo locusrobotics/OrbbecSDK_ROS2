@@ -77,6 +77,8 @@ def generate_launch_description():
         DeclareLaunchArgument('bag_record_filename', default_value=''),
         DeclareLaunchArgument('bag_filename', default_value=''),
         DeclareLaunchArgument('bag_loop', default_value='false'),
+        DeclareLaunchArgument('firmware_upgrade_filepath', default_value=''),
+        DeclareLaunchArgument('expected_firmware_version', default_value=''),
         DeclareLaunchArgument('upgrade_firmware', default_value=''),
         DeclareLaunchArgument('preset_firmware_path', default_value=''),
         DeclareLaunchArgument('load_config_json_file_path', default_value=''),

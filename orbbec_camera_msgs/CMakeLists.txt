@@ -26,6 +26,7 @@ rosidl_generate_interfaces(
     "msg/IMUInfo.msg"
     "msg/RGBD.msg"
     "msg/StreamProfile.msg"
+    "srv/CameraTrigger.srv"
     "srv/GetBool.srv"
     "srv/GetDeviceConfig.srv"
     "srv/GetDeviceInfo.srv"

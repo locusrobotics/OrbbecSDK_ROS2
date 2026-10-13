@@ -2,8 +2,61 @@
 Changelog for package orbbec_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+999.10.0 (2026-07-13)
+---------------------
+* [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
+* Contributors: Bence Magyar
+
+999.9.0 (2026-07-10)
+--------------------
+
+999.8.0 (2026-06-16)
+--------------------
+
+999.7.0 (2026-03-30)
+--------------------
+
+999.6.0 (2026-03-05)
+--------------------
+
+999.5.0 (2026-02-13)
+--------------------
+
+999.4.0 (2026-02-06)
+--------------------
+
+999.3.0 (2026-01-27)
+--------------------
+* Updates the locus branch to v2.6.3 from Orbbec (`#22 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/22>`_)
+  This was tested on a robot with the overnight stress test
+  ---------
+  Co-authored-by: jj <957713278@qq.com>
+  Co-authored-by: datean <datean@orbbec.com>
+  Co-authored-by: yalian <yalian@example.com>
+  Co-authored-by: xiexun <xiexun@orbbec.com>
+  Co-authored-by: obyalian <yalian@orbbec.com>
+  Co-authored-by: slz <shenlanzhou@orbbec.com>
+  Co-authored-by: Christian Rauch <Christian.Rauch@unileoben.ac.at>
+  Co-authored-by: ob-yalian <luotao2025@163.com>
+* [APG-1777] change camera origin (`#21 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/21>`_)
+  Camera origin currently on outside of glass, this moves it in based on
+  the dimensions from orbbec datasheet.
+  Made
+  [this](https://locusrobotics.atlassian.net/jira/software/projects/APG/boards/153?jql=assignee%20%3D%20712020%3A11468fc1-984e-4740-a109-f6f26005009e&selectedIssue=APG-2140)
+  ticket to go through the urdf more thoroughly and add docs on where the
+  values came from. This PR is just to get gazebo working asap
+* Contributors: Sushant Raj, matthewkazan-locus
+
+999.2.0 (2025-12-05)
+--------------------
+
+999.1.3 (2025-12-01)
+--------------------
+
+999.1.2 (2025-12-01)
+--------------------
+* Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
+* Contributors: Sushant Raj
 
 2.8.6 (2026-04-30)
 ------------------

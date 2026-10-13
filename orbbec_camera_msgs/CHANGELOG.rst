@@ -5,6 +5,60 @@ Changelog for package orbbec_camera_msgs
 Forthcoming
 -----------
 
+999.9.0 (2026-07-10)
+--------------------
+
+999.8.0 (2026-06-16)
+--------------------
+
+999.7.0 (2026-03-30)
+--------------------
+
+999.6.0 (2026-03-05)
+--------------------
+
+999.5.0 (2026-02-13)
+--------------------
+
+999.4.0 (2026-02-06)
+--------------------
+
+999.3.0 (2026-01-27)
+--------------------
+
+999.2.0 (2025-12-05)
+--------------------
+
+999.1.3 (2025-12-01)
+--------------------
+
+999.1.2 (2025-12-01)
+--------------------
+* Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
+* Contributors: Sushant Raj
+
+999.10.0 (2026-07-13)
+---------------------
+* [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
+  - Merges upstream `orbbec/OrbbecSDK_ROS2` release tag `v2.8.6` into
+  `locus` (single merge commit); bumps the vendored SDK to 2.8.6.
+  - Preserves all Locus customizations (statsd trigger monitor, lifecycle
+  `/state` topic, service-trigger capture, service namespacing,
+  disconnect-event publisher, version-gated firmware update, configurable
+  SDK log path, required-component launch) while adopting upstream
+  refactors.
+  ---------
+  Co-authored-by: slz <shenlanzhou@orbbec.com>
+  Co-authored-by: ob-yalian <luotao2025@163.com>
+  Co-authored-by: Kotaro Yoshimoto <pythagora.yoshimoto@gmail.com>
+* Contributors: Bence Magyar
+
+* Add DeviceStatus.msg
+* Add GetUserCalibParams.srv
+* Add SetUserCalibParams.srv
+* Add string current_sdk_version field to DeviceInfo.msg
+* Contributors: obyalian, slz, xiexun
+
 2.8.6 (2026-04-30)
 ------------------
 * Add depth filter status message types: ``DepthFilterParam.msg``, ``DepthFilterState.msg``, and ``DepthFiltersStatus.msg``.

@@ -35,6 +35,9 @@
 #include <std_srvs/srv/empty.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include <lifecycle_msgs/srv/change_state.hpp>
+#include <lifecycle_msgs/srv/get_state.hpp>
+#include <lifecycle_msgs/msg/state.hpp>
 
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
@@ -51,6 +54,7 @@
 #include "orbbec_camera_msgs/msg/depth_filters_status.hpp"
 #include "orbbec_camera_msgs/srv/get_device_config.hpp"
 #include "orbbec_camera_msgs/srv/get_device_info.hpp"
+#include "orbbec_camera_msgs/srv/camera_trigger.hpp"
 #include "orbbec_camera_msgs/msg/extrinsics.hpp"
 #include "orbbec_camera_msgs/msg/metadata.hpp"
 #include "orbbec_camera_msgs/msg/imu_info.hpp"
@@ -70,6 +74,7 @@
 #include "orbbec_camera/image_publisher.h"
 #include "orbbec_camera/fps_counter.hpp"
 #include "orbbec_camera/fps_delay_status.hpp"
+#include "orbbec_camera/trigger_failure_monitor.h"
 #include "orbbec_camera/frame_timestamp_csv_logger.h"
 #include "jpeg_decoder.h"
 #include <std_msgs/msg/header.hpp>
@@ -143,6 +148,7 @@ using SetArrays = orbbec_camera_msgs::srv::SetArrays;
 using SetStreamProfile = orbbec_camera_msgs::srv::SetStreamProfile;
 using SetUserCalibParams = orbbec_camera_msgs::srv::SetUserCalibParams;
 using GetUserCalibParams = orbbec_camera_msgs::srv::GetUserCalibParams;
+using CameraTrigger = orbbec_camera_msgs::srv::CameraTrigger;
 using DepthFilterState = orbbec_camera_msgs::msg::DepthFilterState;
 using DepthFiltersStatus = orbbec_camera_msgs::msg::DepthFiltersStatus;
 
@@ -505,8 +511,9 @@ class OBCameraNode {
                                      std::shared_ptr<SetInt32::Response>& response);
   void setSYNCHostimeCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
                               std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
-  void sendSoftwareTriggerCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
-                                   std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
+  void resetCaptureServiceVariables();
+  void sendSoftwareTriggerCallback(const std::shared_ptr<CameraTrigger::Request>& request,
+                                   std::shared_ptr<CameraTrigger::Response>& response);
 
   bool toggleSensor(const stream_index_pair& stream_index, bool enabled, std::string& msg);
 
@@ -549,6 +556,19 @@ class OBCameraNode {
 
   void setIRLongExposureCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request>& request,
                                  std::shared_ptr<std_srvs::srv::SetBool::Response>& response);
+  
+  void handleChangeStateRequest(
+      const std::shared_ptr<lifecycle_msgs::srv::ChangeState::Request> request,
+      std::shared_ptr<lifecycle_msgs::srv::ChangeState::Response> response);
+  
+  void handleGetStateRequest(const std::shared_ptr<lifecycle_msgs::srv::GetState::Request> request,
+                             std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response);
+
+  bool activateStreams();
+
+  bool deactivateStreams();
+
+  void setupTriggerFailureMonitor();
 
   void publishPointCloud(const std::shared_ptr<ob::FrameSet>& frame_set);
 
@@ -655,6 +675,8 @@ class OBCameraNode {
 
   bool isWriteCustomerDataSuccess() const;
 
+  void set_state(uint8_t state);
+
  private:
   std::atomic_bool write_customer_data_success_{false};
   std::atomic_bool user_calibration_ready_{false};
@@ -669,6 +691,7 @@ class OBCameraNode {
   std::unique_ptr<ob::Pipeline> imuPipeline_ = nullptr;
   std::atomic_bool pipeline_started_{false};
   std::string camera_name_ = "camera";
+  std::string namespace_ = "";
   std::string accel_gyro_frame_id_ = "camera_accel_gyro_optical_frame";
   const std::string imu_frame_id_ = "camera_gyro_frame";
   std::shared_ptr<ob::Config> pipeline_config_ = nullptr;
@@ -759,14 +782,17 @@ class OBCameraNode {
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_reset_timestamp_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_interleaver_laser_sync_srv_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_sync_host_time_srv_;
-  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr send_software_trigger_srv_;
+  rclcpp::Service<CameraTrigger>::SharedPtr send_service_trigger_srv_;
   rclcpp::Service<SetFilter>::SharedPtr set_filter_srv_;
+  rclcpp::Service<CameraTrigger>::SharedPtr capture_camera_images_srv_;
+  rclcpp::Service<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_srv_;
+  rclcpp::Service<lifecycle_msgs::srv::GetState>::SharedPtr get_state_srv_;
+  rclcpp::Service<orbbec_camera_msgs::srv::GetBool>::SharedPtr get_streams_enable_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_point_cloud_decimation_srv_;
   rclcpp::Service<GetInt32>::SharedPtr get_point_cloud_decimation_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_disparity_range_mode_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_disparity_search_offset_srv_;
   rclcpp::Service<SetInt32>::SharedPtr set_sync_io_voltage_level_srv_;
-  rclcpp::Service<orbbec_camera_msgs::srv::GetBool>::SharedPtr get_streams_enable_srv_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_streams_enable_srv_;
   rclcpp::Service<SetString>::SharedPtr set_image_registration_mode_srv_;
   rclcpp::Service<SetStreamProfile>::SharedPtr set_stream_profile_srv_;
@@ -774,6 +800,21 @@ class OBCameraNode {
   rclcpp::Service<SetUserCalibParams>::SharedPtr set_user_calib_params_srv_;
   rclcpp::Service<SetString>::SharedPtr set_ae_reference_stream_srv_;
   rclcpp::Service<SetString>::SharedPtr set_ae_strategy_srv_;
+
+
+  std::atomic_bool service_capture_started_{false};
+  std::atomic_int number_of_rgb_frames_captured_{0};
+  std::atomic_int number_of_depth_frames_captured_{0};
+  std::mutex service_capture_lock_;
+  std::condition_variable service_capture_cv_;
+  sensor_msgs::msg::CameraInfo color_image_camera_info_;
+  sensor_msgs::msg::CameraInfo depth_image_camera_info_;
+  sensor_msgs::msg::Image::UniquePtr color_image_;
+  sensor_msgs::msg::Image::UniquePtr depth_image_;
+  sensor_msgs::msg::Image::UniquePtr undistorted_color_images_;
+
+  // timeout in ms
+  float service_capture_time_out_ = 1000;
 
   bool enable_sync_output_accel_gyro_ = false;
   bool publish_tf_ = false;
@@ -877,6 +918,9 @@ class OBCameraNode {
   int trigger2image_delay_us_ = 0;
   int trigger_out_delay_us_ = 0;
   bool trigger_out_enabled_ = false;
+  bool service_trigger_enabled_ = false;
+  int warmup_trigger_frame_count_ = 0;
+  int warmup_trigger_frame_threshold_ = 10;
   bool software_trigger_enabled_ = false;
   int frames_per_trigger_ = 1;
   bool enable_ptp_config_ = false;
@@ -1108,6 +1152,13 @@ class OBCameraNode {
   std::unique_ptr<FpsDelayStatus> fps_delay_status_depth_{nullptr};
 
   std::string intra_camera_sync_reference_ = "";
+  rclcpp::Publisher<lifecycle_msgs::msg::State>::SharedPtr lifecycle_state_pub_;
+  uint8_t lifecycle_state_{lifecycle_msgs::msg::State::PRIMARY_STATE_UNKNOWN};
+
+  // Trigger failure monitor for automatic recovery
+  std::unique_ptr<TriggerFailureMonitor> trigger_failure_monitor_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr trigger_failure_event_pub_ = nullptr;
+
   std::string ae_reference_stream_;
   std::string ae_strategy_;
   int pid_ = 0;

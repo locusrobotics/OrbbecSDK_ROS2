@@ -77,7 +77,8 @@ def generate_launch_description():
         DeclareLaunchArgument('bag_record_filename', default_value=''),
         DeclareLaunchArgument('bag_filename', default_value=''),
         DeclareLaunchArgument('bag_loop', default_value='false'),
-        DeclareLaunchArgument('upgrade_firmware', default_value=''),
+        DeclareLaunchArgument('firmware_upgrade_filepath', default_value=''),
+        DeclareLaunchArgument('expected_firmware_version', default_value=''),
         DeclareLaunchArgument('preset_firmware_path', default_value=''),
         DeclareLaunchArgument('load_config_json_file_path', default_value=''),
         DeclareLaunchArgument('export_config_json_file_path', default_value=''),
@@ -240,7 +241,7 @@ def generate_launch_description():
         DeclareLaunchArgument('preset_resolution_config', default_value='1280, 800, 1, 1'),
         DeclareLaunchArgument('retry_on_usb3_detection_failure', default_value='false'),
         DeclareLaunchArgument('laser_energy_level', default_value='-1'),
-        DeclareLaunchArgument('enable_sync_host_time', default_value='false'),
+        DeclareLaunchArgument('enable_sync_host_time', default_value='true'),
         DeclareLaunchArgument('time_sync_period', default_value='6.0'), # seconds
         DeclareLaunchArgument('time_domain', default_value='global'),# global, device, system
         DeclareLaunchArgument('timestamp_clock_type', default_value=''),# realtime or monotonic, default is realtime.

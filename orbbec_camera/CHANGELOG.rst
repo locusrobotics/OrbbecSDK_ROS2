@@ -5,6 +5,80 @@ Changelog for package orbbec_camera
 Forthcoming
 -----------
 
+999.10.0 (2026-07-13)
+---------------------
+* [APG-2868] Update to v2.8.6 upstream (`#32 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/32>`_)
+* Contributors: Bence Magyar
+
+999.9.0 (2026-07-10)
+--------------------
+* [APG-2810] Report orbbec trigger failures to statsd (`#31 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/31>`_)
+* Contributors: Bence Magyar
+
+999.8.0 (2026-06-16)
+--------------------
+* APG-2731: Publish camera name on device disconnect (`#29 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/29>`_)
+* Contributors: Sushant Raj
+
+999.7.0 (2026-03-30)
+--------------------
+* APG-2322 Make Orbbec driver a required component of launch (`#28 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/28>`_)
+  This will cause the whole launch tree to crash on failure. It also
+  strips out the respawn logic implemented before. It worked with one
+  camera, but I recently found some weaknesses where it could push the
+  wrong namespace. We'll handle the respawning elsewhere
+* Contributors: Sushant Raj
+
+999.6.0 (2026-03-05)
+--------------------
+* Add variable for SDK log path (`#25 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/25>`_)
+* Contributors: Sushant Raj
+
+999.5.0 (2026-02-13)
+--------------------
+* APG-2306 Adds warmup triggers to the trigger failure recovery, adds a get life cycle state service, and small bug fixes (`#24 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/24>`_)
+* Contributors: Sushant Raj
+
+999.4.0 (2026-02-06)
+--------------------
+* APG-2274 Sets Up Pick Cameras to respawn on crashes (`#23 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/23>`_)
+* Contributors: Sushant Raj
+
+999.3.0 (2026-01-27)
+--------------------
+* Updates the locus branch to v2.6.3 from Orbbec (`#22 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/22>`_)
+  This was tested on a robot with the overnight stress test
+  ---------
+  Co-authored-by: jj <957713278@qq.com>
+  Co-authored-by: datean <datean@orbbec.com>
+  Co-authored-by: yalian <yalian@example.com>
+  Co-authored-by: xiexun <xiexun@orbbec.com>
+  Co-authored-by: obyalian <yalian@orbbec.com>
+  Co-authored-by: slz <shenlanzhou@orbbec.com>
+  Co-authored-by: Christian Rauch <Christian.Rauch@unileoben.ac.at>
+  Co-authored-by: ob-yalian <luotao2025@163.com>
+* APG-2180 Adds functions to recover after a trigger service stalls (`#20 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/20>`_)
+* adding warmup trigger (`#19 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/19>`_)
+* Contributors: Sushant Raj, asainilocus
+
+999.2.0 (2025-12-05)
+--------------------
+* APG-2108 Adds a status topic to the camera driver (`#18 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/18>`_)
+  This change introduces a /state topic that uses the lifecycle message
+  types to indicate what state the camera is in (streaming or not).
+  Tested on roadkill.
+* Contributors: Sushant Raj
+
+999.1.3 (2025-12-01)
+--------------------
+* lifecycle service
+* Contributors: Sushant
+
+999.1.2 (2025-12-01)
+--------------------
+* Update locus branch by pulling in v2_main (with a few adjustments to keep our changes) (`#17 <https://github.com/locusrobotics/OrbbecSDK_ROS2/issues/17>`_)
+* Contributors: Sushant Raj
+
 2.8.6 (2026-04-30)
 ------------------
 * Update OrbbecSDK from v2.7.6 to v2.8.6.

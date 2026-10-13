@@ -291,10 +291,13 @@ void OBCameraNodeDriver::init() {
   auto log_level = obLogSeverityFromString(log_level_str);
   auto ros_log_level = rosLogSeverityFromString(log_level_str);
   auto log_file_name = declare_parameter<std::string>("log_file_name", "");
-  std::string log_path = getLogDirectoryForCamera(g_camera_name);
+  auto log_file_path = declare_parameter<std::string>("log_file_path", "");
+  if (log_file_path.empty()) {
+    log_file_path = getLogDirectoryForCamera(g_camera_name);
+  }
   // Set logger to console
   ob::Context::setLoggerToConsole(log_level);
-  ob::Context::setLoggerToFile(log_level, log_path.c_str());
+  ob::Context::setLoggerToFile(log_level, log_file_path.c_str());
   if (ros_log_level != RCUTILS_LOG_SEVERITY_UNSET) {
     auto ret = rcutils_logging_set_logger_level(this->get_logger().get_name(), ros_log_level);
     if (ret != RCUTILS_RET_OK) {
@@ -307,7 +310,7 @@ void OBCameraNodeDriver::init() {
   try {
     ob::Context::setLoggerFileName(log_file_name);
     RCLCPP_INFO_STREAM(logger_, "SDK log file path set to: "
-                                    << (std::filesystem::path(log_path) / log_file_name).string());
+                                    << (std::filesystem::path(log_file_path) / log_file_name).string());
   } catch (const ob::Error &e) {
     RCLCPP_WARN_STREAM(
         logger_, "Failed to set SDK log file name: " << orbbec_camera::formatObErrorWithStatus(e));
@@ -355,7 +358,8 @@ void OBCameraNodeDriver::init() {
   enable_sync_host_time_ = declare_parameter<bool>("enable_sync_host_time", true);
   double time_sync_period = declare_parameter<double>("time_sync_period", 60.0);
   time_sync_period_ = std::chrono::milliseconds((int)(time_sync_period * 1000));
-  upgrade_firmware_ = declare_parameter<std::string>("upgrade_firmware", "");
+  firmware_upgrade_filepath_ = declare_parameter<std::string>("firmware_upgrade_filepath", "");
+  expected_firmware_version_ = declare_parameter<std::string>("expected_firmware_version", "");
   g_time_domain = declare_parameter<std::string>("time_domain", g_time_domain);
   preset_firmware_path_ =
       declare_parameter<std::string>("preset_firmware_path", preset_firmware_path_);
@@ -377,7 +381,7 @@ void OBCameraNodeDriver::init() {
     return;
   }
   reboot_device_srv_ = this->create_service<std_srvs::srv::Empty>(
-      "reboot_device", std::bind(&OBCameraNodeDriver::rebootDeviceCallback, this,
+      g_camera_name + "/reboot_device", std::bind(&OBCameraNodeDriver::rebootDeviceCallback, this,
                                  std::placeholders::_1, std::placeholders::_2));
   set_bag_recording_srv_ = this->create_service<orbbec_camera_msgs::srv::SetBagRecording>(
       "set_bag_recording", std::bind(&OBCameraNodeDriver::setBagRecordingCallback, this,
@@ -398,21 +402,32 @@ void OBCameraNodeDriver::init() {
   net_device_ip_ = declare_parameter<std::string>("net_device_ip", "");
   net_device_port_ = static_cast<int>(declare_parameter<int>("net_device_port", 0));
   enumerate_net_device_ = declare_parameter<bool>("enumerate_net_device", false);
+  enable_streams_on_startup_ = declare_parameter<bool>("enable_streams_on_startup", true);
   uvc_backend_ = declare_parameter<std::string>("uvc_backend", "libuvc");
   device_access_mode_str_ = declare_parameter<std::string>("device_access_mode", "Default");
   device_access_mode_ = stringToAccessMode(device_access_mode_str_);
   RCLCPP_INFO_STREAM(logger_, "Device access mode: " << device_access_mode_str_ << " ("
                                                      << device_access_mode_ << ")");
-  if (uvc_backend_ == "libuvc") {
-    ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
-    RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
-  } else if (uvc_backend_ == "v4l2") {
-    ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_V4L2);
-    RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
+  if (!net_device_ip_.empty()) {
+    RCLCPP_INFO_STREAM(logger_, "Net device at " << net_device_ip_
+                                                 << ", skipping UVC backend selection");
   } else {
-    ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
-    RCLCPP_WARN_STREAM(logger_,
-                       "Unsupported uvc_backend '" << uvc_backend_ << "', using default libuvc");
+    try {
+      if (uvc_backend_ == "libuvc") {
+        ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
+        RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
+      } else if (uvc_backend_ == "v4l2") {
+        ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_V4L2);
+        RCLCPP_INFO_STREAM(logger_, "Set UVC backend to " << uvc_backend_);
+      } else {
+        ctx_->setUvcBackendType(OB_UVC_BACKEND_TYPE_LIBUVC);
+        RCLCPP_WARN_STREAM(
+            logger_, "Unsupported uvc_backend '" << uvc_backend_ << "', using default libuvc");
+      }
+    } catch (const ob::Error &e) {
+      RCLCPP_WARN_STREAM(logger_, "Failed to set UVC backend, leaving the SDK default in place: "
+                                      << orbbec_camera::formatObErrorWithStatus(e));
+    }
   }
   ctx_->enableNetDeviceEnumeration(enumerate_net_device_);
   device_changed_callback_id_ = ctx_->registerDeviceChangedCallback(
@@ -437,6 +452,18 @@ void OBCameraNodeDriver::init() {
   }
   query_thread_ = std::make_shared<std::thread>([this]() { queryDevice(); });
   reset_device_thread_ = std::make_shared<std::thread>([this]() { resetDevice(); });
+
+  device_status_timer_ =
+      this->create_wall_timer(std::chrono::milliseconds(1000 / device_status_interval_hz),
+                              [this]() { deviceStatusTimer(); });
+
+  // Initialize device status publisher
+  device_status_pub_ = this->create_publisher<orbbec_camera_msgs::msg::DeviceStatus>(
+      "device_status", rclcpp::QoS(1).transient_local());
+
+  // Publishes the camera name when this driver's device disconnects.
+  disconnect_event_pub_ =
+      this->create_publisher<std_msgs::msg::String>("/orbbec_disconnect_events", rclcpp::QoS(10));
 }
 
 void OBCameraNodeDriver::onDeviceConnected(const std::shared_ptr<ob::DeviceList> &device_list) {
@@ -501,8 +528,16 @@ void OBCameraNodeDriver::onDeviceDisconnected(const std::shared_ptr<ob::DeviceLi
       RCLCPP_INFO_STREAM(logger_,
                          "device with " << uid << " disconnected, notify reset device thread");
       delay_stream_start_after_reconnect_ = true;
+      // Emit a disconnect event with the camera name for the metrics bridge.
+      if (disconnect_event_pub_) {
+        std_msgs::msg::String disconnect_msg;
+        disconnect_msg.data = g_camera_name;
+        disconnect_event_pub_->publish(disconnect_msg);
+      }
       reset_device_flag_ = true;
       reset_device_cond_.notify_all();
+      RCLCPP_INFO_STREAM(logger_,
+                         "device with " << uid << " disconnected, notify reset device thread 2.");
       break;
     }
   }
@@ -526,8 +561,10 @@ OBLogSeverity OBCameraNodeDriver::obLogSeverityFromString(const std::string_view
 
 void OBCameraNodeDriver::checkConnectTimer() {
   if (!device_connected_.load()) {
-    RCLCPP_DEBUG_STREAM(logger_,
-                        "checkConnectTimer: device " << serial_number_ << " not connected");
+    RCLCPP_DEBUG(
+        logger_,
+        "checkConnectTimer: device not connected. Serial number [%s], IP [%s], usb port [%s]",
+        serial_number_.c_str(), net_device_ip_.c_str(), usb_port_.c_str());
     return;
   } else if (!ob_camera_node_ && !ob_lidar_node_) {
     device_connected_.store(false);
@@ -1302,57 +1339,62 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
   RCLCPP_INFO_STREAM(logger_, "Current node pid: " << getpid());
   auto time_cost = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::high_resolution_clock::now() - start_time_);
-  RCLCPP_DEBUG_STREAM(logger_, "Start device cost: " << time_cost.count() << " ms");
+  RCLCPP_INFO_STREAM(logger_, "Start device cost " << time_cost.count() << " ms");
+  if (!firmware_upgrade_filepath_.empty() && !expected_firmware_version_.empty()) {
+    if (device_info_->getFirmwareVersion() != expected_firmware_version_) {
+      RCLCPP_INFO_STREAM(logger_,
+                      "Firmware does not match the expected version : " <<
+                      expected_firmware_version_ << ". Upgrading device.");
+      bool is_second_update = is_reupdating_.load();
 
-  if (!upgrade_firmware_.empty()) {
-    // Check if this is a second update (reupdate scenario)
-    bool is_second_update = is_reupdating_.load();
-
-    if (is_second_update) {
-      RCLCPP_INFO(logger_, "Device reconnected, starting the second firmware update");
-    } else {
-      RCLCPP_INFO(logger_, "Starting firmware update from file: %s", upgrade_firmware_.c_str());
-    }
-
-    firmware_update_success_ = false;
-    need_reupdate_ = false;
-
-    if (ob_camera_node_) {
-      TRY_EXECUTE_BLOCK({
-        ob_camera_node_->withDeviceLock([&]() {
-          device_->updateFirmware(
-              upgrade_firmware_.c_str(),
-              std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
-                        std::placeholders::_2, std::placeholders::_3),
-              false);
-        });
-      });
-    } else if (ob_lidar_node_) {
-      device_->updateFirmware(
-          upgrade_firmware_.c_str(),
-          std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
-                    std::placeholders::_2, std::placeholders::_3),
-          false);
-    }
-
-    if (need_reupdate_) {
-      // Some devices require a second update after reboot
-      RCLCPP_INFO(logger_, "The device will reboot and perform a second update automatically");
-      // Set flag to indicate we're waiting for device to reboot for second update
-      is_reupdating_ = true;
-      // Keep upgrade_firmware_ path and wait for device to reconnect
-      // The second update will be triggered automatically when device reconnects
-      return;
-    }
-
-    if (firmware_update_success_) {
       if (is_second_update) {
-        RCLCPP_INFO(logger_, "Second firmware update completed successfully");
-        is_reupdating_ = false;
+        RCLCPP_INFO(logger_, "Device reconnected, starting the second firmware update...");
       } else {
-        RCLCPP_INFO(logger_, "Firmware update completed successfully");
+        RCLCPP_INFO(logger_, "Starting firmware update from file: %s", upgrade_firmware_.c_str());
       }
-      return;
+
+      firmware_update_success_ = false;
+      need_reupdate_ = false;
+
+      if (ob_camera_node_) {
+        TRY_EXECUTE_BLOCK({
+          ob_camera_node_->withDeviceLock([&]() {
+            device_->updateFirmware(
+                firmware_upgrade_filepath_.c_str(),
+                std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
+                          std::placeholders::_2, std::placeholders::_3),
+                false);
+          });
+        });
+      } else if (ob_lidar_node_) {
+        device_->updateFirmware(
+            firmware_upgrade_filepath_.c_str(),
+            std::bind(&OBCameraNodeDriver::firmwareUpdateCallback, this, std::placeholders::_1,
+                      std::placeholders::_2, std::placeholders::_3),
+            false);
+      }
+
+      if (need_reupdate_) {
+        // Some devices require a second update after reboot
+        RCLCPP_INFO(logger_, "The device will reboot and perform a second update automatically.");
+        // Set flag to indicate we're waiting for device to reboot for second update
+        is_reupdating_ = true;
+        // Keep upgrade_firmware_ path and wait for device to reconnect
+        // The second update will be triggered automatically when device reconnects
+        return;
+      }
+
+      if (firmware_update_success_) {
+        if (is_second_update) {
+          RCLCPP_INFO(logger_, "Second firmware update completed successfully!");
+          is_reupdating_ = false;
+        } else {
+          RCLCPP_INFO(logger_, "Firmware update completed successfully!");
+        }
+        return;
+      }
+    } else {
+      RCLCPP_INFO_STREAM(logger_, "Firmware matches the expected version: " << expected_firmware_version_);
     }
   }
 
@@ -1364,7 +1406,9 @@ void OBCameraNodeDriver::initializeDevice(const std::shared_ptr<ob::Device> &dev
 
   if (ob_camera_node_) {
     ob_camera_node_->startIMU();
-    ob_camera_node_->startStreams();
+    if (enable_streams_on_startup_) {
+      ob_camera_node_->startStreams();
+    }
   } else if (ob_lidar_node_) {
     ob_lidar_node_->startStreams();
     ob_lidar_node_->startIMU();
@@ -1783,7 +1827,7 @@ void OBCameraNodeDriver::firmwareUpdateCallback(OBFwUpdateState state, const cha
       // Keep upgrade_firmware_ path for second update
       RCLCPP_INFO(logger_, "Firmware update requires a second update after reboot");
     } else {
-      upgrade_firmware_ = "";
+      firmware_upgrade_filepath_ = "";
     }
   }
 }

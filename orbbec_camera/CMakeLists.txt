@@ -238,6 +238,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE ${ORBBEC_LIBS_DIR})
 target_link_libraries(${PROJECT_NAME}
     ${OpenCV_LIBS}
     ${orbbec_camera_msgs_TARGETS}
+    ${lifecycle_msgs_TARGETS}
     ${std_srvs_TARGETS}
     ament_index_cpp::ament_index_cpp
     Eigen3::Eigen
@@ -312,6 +313,7 @@ target_include_directories(start_benchmark PUBLIC ${COMMON_INCLUDE_DIRS} ${image
 target_link_libraries(start_benchmark
     ${OpenCV_LIBS}
     ${orbbec_camera_msgs_TARGETS}
+    ${lifecycle_msgs_TARGETS}
     ${std_srvs_TARGETS}
     Eigen3::Eigen
     rclcpp::rclcpp
@@ -335,6 +337,7 @@ target_link_directories(multi_save_rgbir PRIVATE ${ORBBEC_LIBS_DIR})
 target_link_libraries(multi_save_rgbir
     ${OpenCV_LIBS}
     ${orbbec_camera_msgs_TARGETS}
+    ${lifecycle_msgs_TARGETS}
     ${std_srvs_TARGETS}
     Eigen3::Eigen
     OpenSSL::Crypto

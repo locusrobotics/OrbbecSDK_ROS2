@@ -22,7 +22,7 @@ setup(
     maintainer_email="asaini@locusobotics.com",
     description="Interfacing test nodes for orbbec camera",
     license="Proprietary",
-    tests_require=["pytest"],
+    extras_require={"test": ["pytest"]},
     entry_points={
         "console_scripts": [
             "run_orbbec_trigger = orbbec_camera_py.run_orbbec_trigger:main",

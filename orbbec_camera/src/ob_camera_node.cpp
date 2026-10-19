@@ -3899,6 +3899,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
       publishStaticTransforms();
       tf_published_ = true;
     }
+    const auto tf_publish_t = getSteadyNowUs() - frame_set_arrival_steady_us;
     auto device_info = device_->getDeviceInfo();
     CHECK_NOTNULL(device_info);
     auto depth_frame = frame_set->getFrame(OB_FRAME_DEPTH);
@@ -3908,6 +3909,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
     auto left_color_frame = frame_set->getFrame(OB_FRAME_COLOR_LEFT);
     auto right_color_frame = frame_set->getFrame(OB_FRAME_COLOR_RIGHT);
     auto ir_frame = frame_set->getFrame(OB_FRAME_IR);
+    const auto get_frames_t = getSteadyNowUs() - frame_set_arrival_steady_us;
     if (depth_frame) {
       setDisparitySearchOffset();
       setDepthAutoExposureROI();
@@ -3917,6 +3919,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
         fps_counter_depth_->tick();
       }
     }
+    const auto depth_filter_t = getSteadyNowUs() - frame_set_arrival_steady_us;
     if (color_frame) {
       setColorAutoExposureROI();
       color_frame = processColorFrameFilter(color_frame);
@@ -3932,6 +3935,8 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
       right_color_frame = processColorFrameFilter(right_color_frame);
       frame_set->pushFrame(right_color_frame);
     }
+    const auto color_filter_t = getSteadyNowUs() - frame_set_arrival_steady_us;
+
     if (left_ir_frame) {
       left_ir_frame = processLeftIrFrameFilter(left_ir_frame);
       frame_set->pushFrame(left_ir_frame);
@@ -3942,6 +3947,8 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
       frame_set->pushFrame(right_ir_frame);
       fps_counter_right_ir_->tick();
     }
+    const auto ir_filter_t = getSteadyNowUs() - frame_set_arrival_steady_us;
+
     if (depth_registration_ && align_filter_ && depth_frame) {
       publishRawDepthImage(depth_frame);
       if (auto new_frame = align_filter_->process(frame_set)) {
@@ -3957,6 +3964,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
                         "Depth registration is disabled or align filter is null or depth frame is "
                         "null or color frame is null");
     }
+    const auto publish_raw_depth_t = getSteadyNowUs() - frame_set_arrival_steady_us;
 
     auto final_color_frame = frame_set->getFrame(OB_FRAME_COLOR);
     auto final_depth_frame = frame_set->getFrame(OB_FRAME_DEPTH);
@@ -3970,6 +3978,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
           frame_set_arrival_steady_us, track_color, track_depth, color_publish_expected,
           depth_publish_expected);
     }
+    const auto csv_log_t = getSteadyNowUs() - frame_set_arrival_steady_us;
 
     // Refresh frame from current frameset before logging to reflect post-filter/alignment output.
     for (const auto &stream_index : IMAGE_STREAMS) {
@@ -4000,6 +4009,8 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
       logFrameInfoOnce(stream_index, updated_video);
     }
 
+    const auto update_align_t = getSteadyNowUs() - frame_set_arrival_steady_us;
+
     if (enable_stream_[COLOR] && color_frame) {
       std::unique_lock<std::mutex> lock(color_frame_queue_lock_);
       color_frame_queue_.push(frame_set);
@@ -4007,6 +4018,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
     } else {
       publishPointCloud(frame_set);
     }
+    const auto enqueue_color_t = getSteadyNowUs() - frame_set_arrival_steady_us;
 
     if (enable_stream_[COLOR_LEFT] && left_color_frame) {
       std::unique_lock<std::mutex> lock(left_color_frame_queue_lock_);
@@ -4018,6 +4030,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
       right_color_frame_queue_.push(frame_set);
       right_color_frame_queue_cv_.notify_all();
     }
+    const auto enqueue_left_right_color_t = getSteadyNowUs() - frame_set_arrival_steady_us;
 
     for (const auto &stream_index : IMAGE_STREAMS) {
       if (enable_stream_[stream_index]) {
@@ -4034,6 +4047,22 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
         onNewFrameCallback(frame, stream_index);
       }
     }
+    const auto depth_callback_t = getSteadyNowUs() - frame_set_arrival_steady_us;
+
+    RCLCPP_WARN_STREAM(logger_, "Profiling times: (" <<
+		       frame_set_arrival_steady_us << ")" <<std::endl <<
+		       "tf_publish_t: " << tf_publish_t << std::endl <<
+		       "get_frames_t: " << get_frames_t << std::endl <<
+		       "depth_filter_t: " << depth_filter_t << std::endl <<
+		       "color_filter_t: " << color_filter_t << std::endl <<
+		       "ir_filter_t: " << ir_filter_t << std::endl <<
+		       "publish_raw_depth_t: " << publish_raw_depth_t << std::endl <<
+		       "csv_log_t: " << csv_log_t << std::endl <<
+		       "update_align_t: " << update_align_t << std::endl <<
+		       "enqueue_color_t: " << enqueue_color_t << std::endl <<
+		       "enqueue_left_right_color_t: " << enqueue_left_right_color_t << std::endl <<
+		       "depth_callback_t: " << depth_callback_t << std::endl
+		       );
   } catch (const ob::Error &e) {
     RCLCPP_ERROR_STREAM(
         logger_, "onNewFrameSetCallback error: " << orbbec_camera::formatObErrorWithStatus(e));

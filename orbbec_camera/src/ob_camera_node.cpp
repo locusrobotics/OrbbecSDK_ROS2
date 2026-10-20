@@ -4049,7 +4049,7 @@ void OBCameraNode::onNewFrameSetCallback(std::shared_ptr<ob::FrameSet> frame_set
     }
     const auto depth_callback_t = getSteadyNowUs() - frame_set_arrival_steady_us;
 
-    RCLCPP_WARN_STREAM(logger_, "Profiling times: (" <<
+    RCLCPP_WARN_STREAM(logger_, "Profiling times main thread: (" <<
 		       frame_set_arrival_steady_us << ")" <<std::endl <<
 		       "tf_publish_t: " << tf_publish_t << std::endl <<
 		       "get_frames_t: " << get_frames_t << std::endl <<
@@ -4099,15 +4099,26 @@ void OBCameraNode::onNewColorFrameCallback() {
     std::unique_lock<std::mutex> lock(color_frame_queue_lock_);
     color_frame_queue_cv_.wait(
         lock, [this]() { return !color_frame_queue_.empty() || !(is_running_.load()); });
-
+    auto color_dequeue_t = getSteadyNowUs();
     if (!rclcpp::ok() || !is_running_.load()) {
       break;
     }
     std::shared_ptr<ob::FrameSet> frameSet = color_frame_queue_.front();
     is_color_frame_decoded_ = decodeColorFrameToBuffer(frameSet->colorFrame(), rgb_buffer_);
+    auto color_decode_t = getSteadyNowUs() - color_dequeue_t;
     onNewFrameCallback(frameSet->colorFrame(), COLOR);
+    auto color_publish_t = getSteadyNowUs() - color_dequeue_t;
     publishPointCloud(frameSet);
+    auto pcl_publish_t = getSteadyNowUs() - color_dequeue_t;
     color_frame_queue_.pop();
+    auto pop_t = getSteadyNowUs() - color_dequeue_t;
+    RCLCPP_WARN_STREAM(logger_, "Profiling times color thread: (" <<
+		       color_dequeue_t << ")" <<std::endl <<
+		       "color_decode_t: " << color_decode_t << std::endl <<
+		       "color_publish_t: " << color_publish_t << std::endl <<
+		       "pcl_publish_t: " << pcl_publish_t << std::endl <<
+		       "pop_t: " << pop_t << std::endl
+		       );
   }
 
   RCLCPP_DEBUG_STREAM(logger_, "Color frame thread exited");
